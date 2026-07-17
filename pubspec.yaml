@@ -1,0 +1,40 @@
+name: fitza
+description: "Fitza - AI Fitness Application"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management & Local Storage
+  provider: ^6.1.2
+  shared_preferences: ^2.2.3
+
+  # UI, Icons & Styling
+  google_fonts: ^6.2.0
+  fl_chart: ^0.66.0
+
+  # AI & Media
+  image_picker: ^1.1.2
+  google_generative_ai: ^0.4.0
+
+  # Notifications & Local Sensors/Utilities
+  flutter_local_notifications: ^17.1.2
+  permission_handler: ^12.0.3
+  pedometer: ^4.2.0
+  notification_listener_service: ^1.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
