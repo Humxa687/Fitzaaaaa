@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
 
@@ -22,45 +24,6 @@ class _FoodAiScreenState extends State<FoodAiScreen> {
   double? _carbs;
   double? _fat;
 
-  // Preset of mock foods for local test classification
-  final List<Map<String, dynamic>> _mockFoods = [
-    {
-      "name": "Grilled Chicken Salad",
-      "calories": 380,
-      "protein": 32.0,
-      "carbs": 12.0,
-      "fat": 18.0
-    },
-    {
-      "name": "Avocado Toast with Egg",
-      "calories": 290,
-      "protein": 11.5,
-      "carbs": 24.0,
-      "fat": 16.0
-    },
-    {
-      "name": "Salmon bowl with brown rice",
-      "calories": 540,
-      "protein": 38.0,
-      "carbs": 48.0,
-      "fat": 22.0
-    },
-    {
-      "name": "Mixed berry bowl with yogurt",
-      "calories": 210,
-      "protein": 12.0,
-      "carbs": 28.0,
-      "fat": 3.5
-    },
-    {
-      "name": "Beef Steak & Broccoli",
-      "calories": 620,
-      "protein": 45.0,
-      "carbs": 14.0,
-      "fat": 38.0
-    }
-  ];
-
   Future<void> _pickImage(ImageSource source) async {
     try {
       final pickedFile = await _picker.pickImage(source: source);
@@ -71,28 +34,82 @@ class _FoodAiScreenState extends State<FoodAiScreen> {
           _detectedFood = null;
         });
 
-        // Simulate AI detection delay
-        await Future.delayed(const Duration(seconds: 3));
+        // Call Gemini API
+        final provider = Provider.of<FitnessProvider>(context, listen: false);
+        final apiKey = provider.geminiApiKey;
+        if (apiKey == null || apiKey.isEmpty) {
+          setState(() {
+            _isScanning = false;
+            _image = null;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Please set your Gemini API Key in the Dashboard Settings first.")),
+            );
+          }
+          return;
+        }
 
-        // Choose a random food item from mock database
-        final randomFood = (_mockFoods..shuffle()).first;
+        final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
+        final imageBytes = await _image!.readAsBytes();
+        
+        final prompt = TextPart('''
+Analyze this food image. Estimate its nutritional value.
+Respond ONLY with a valid JSON object matching exactly this format (no markdown formatting, no code blocks):
+{
+  "name": "Food Name",
+  "calories": 400,
+  "protein": 20.5,
+  "carbs": 45.0,
+  "fat": 15.0
+}
+''');
+        final imageParts = [
+          DataPart('image/jpeg', imageBytes),
+        ];
+        
+        final response = await model.generateContent([
+          Content.multi([prompt, ...imageParts])
+        ]);
+        
+        final responseText = response.text?.trim() ?? '{}';
+        String jsonStr = responseText;
+        if (jsonStr.startsWith('```json')) {
+           jsonStr = jsonStr.replaceAll('```json', '').replaceAll('```', '').trim();
+        } else if (jsonStr.startsWith('```')) {
+           jsonStr = jsonStr.replaceAll('```', '').trim();
+        }
 
-        setState(() {
-          _isScanning = false;
-          _detectedFood = randomFood["name"];
-          _calories = randomFood["calories"];
-          _protein = randomFood["protein"];
-          _carbs = randomFood["carbs"];
-          _fat = randomFood["fat"];
-        });
+        try {
+          final data = jsonDecode(jsonStr);
+          setState(() {
+            _isScanning = false;
+            _detectedFood = data["name"] ?? "Unknown Food";
+            _calories = (data["calories"] as num?)?.toInt() ?? 0;
+            _protein = (data["protein"] as num?)?.toDouble() ?? 0.0;
+            _carbs = (data["carbs"] as num?)?.toDouble() ?? 0.0;
+            _fat = (data["fat"] as num?)?.toDouble() ?? 0.0;
+          });
+        } catch (e) {
+          setState(() {
+            _isScanning = false;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Could not parse AI response. Try again.")),
+            );
+          }
+        }
       }
     } catch (e) {
       setState(() {
         _isScanning = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error picking image: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
   }
 
@@ -145,7 +162,7 @@ class _FoodAiScreenState extends State<FoodAiScreen> {
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: _isScanning ? theme.colorScheme.primary : Colors.grey.withOpacity(0.2),
+                    color: _isScanning ? theme.colorScheme.primary : Colors.grey.withValues(alpha: 0.2),
                     width: 2,
                   ),
                 ),
@@ -182,7 +199,7 @@ class _FoodAiScreenState extends State<FoodAiScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 "Estimating calories & macros",
-                                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                                style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
                               ),
                             ],
                           ),
@@ -226,7 +243,7 @@ class _FoodAiScreenState extends State<FoodAiScreen> {
               // Recognition Results
               if (_detectedFood != null) ...[
                 Card(
-                  color: theme.colorScheme.primary.withOpacity(0.06),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.06),
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
@@ -328,7 +345,7 @@ class _FoodAiScreenState extends State<FoodAiScreen> {
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.restaurant, color: FitzaTheme.primaryDark),
@@ -355,9 +372,9 @@ class _FoodAiScreenState extends State<FoodAiScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class NativeMediaController {
@@ -7,7 +8,7 @@ class NativeMediaController {
     try {
       await _channel.invokeMethod('play_pause');
     } on PlatformException catch (e) {
-      print("Failed to send play_pause: '${e.message}'.");
+      debugPrint("Failed to send play_pause: '${e.message}'.");
     }
   }
 
@@ -15,7 +16,7 @@ class NativeMediaController {
     try {
       await _channel.invokeMethod('next');
     } on PlatformException catch (e) {
-      print("Failed to send next: '${e.message}'.");
+      debugPrint("Failed to send next: '${e.message}'.");
     }
   }
 
@@ -23,7 +24,7 @@ class NativeMediaController {
     try {
       await _channel.invokeMethod('previous');
     } on PlatformException catch (e) {
-      print("Failed to send previous: '${e.message}'.");
+      debugPrint("Failed to send previous: '${e.message}'.");
     }
   }
 }

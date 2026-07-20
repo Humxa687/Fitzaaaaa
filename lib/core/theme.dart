@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-enum AppThemeMode { light, dark, ocean, forest, sunset }
+enum AppThemeMode { light, dark }
 
 class FitzaTheme {
   // Brand Colors
-  static const Color primaryDark = Color(0xFF6366F1); // Indigo
+  static const Color primaryDark = Color(0xFF3B82F6); // Blue
   static const Color accentNeon = Color(0xFF10B981);  // Mint/Emerald
   static const Color energyOrange = Color(0xFFF97316); // Energetic Orange
   static const Color bgDarkObsidian = Color(0xFF0F172A); // Slate 900
   static const Color bgDarkCard = Color(0xFF1E293B);     // Slate 800
 
-  static const Color primaryLight = Color(0xFF4F46E5);
+  static const Color primaryLight = Color(0xFF2563EB); // Blue
   static const Color accentTealLight = Color(0xFF0D9488);
   static const Color bgLight = Color(0xFFF8FAFC);
   static const Color bgLightCard = Colors.white;
 
   // Gradients
   static const Gradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)], // Blues
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -47,12 +47,6 @@ class FitzaTheme {
         return lightTheme;
       case AppThemeMode.dark:
         return darkTheme;
-      case AppThemeMode.ocean:
-        return oceanTheme;
-      case AppThemeMode.forest:
-        return forestTheme;
-      case AppThemeMode.sunset:
-        return sunsetTheme;
     }
   }
 
@@ -75,39 +69,6 @@ class FitzaTheme {
       bg: bgLight,
       surface: bgLightCard,
       textColor: const Color(0xFF0F172A),
-    );
-  }
-
-  static ThemeData get oceanTheme {
-    return _buildTheme(
-      brightness: Brightness.dark,
-      primary: const Color(0xFF0284C7), // Light Blue
-      secondary: const Color(0xFF38BDF8), // Cyan
-      bg: const Color(0xFF082F49), // Deep Ocean Blue
-      surface: const Color(0xFF0C4A6E), // Card Ocean
-      textColor: Colors.white,
-    );
-  }
-
-  static ThemeData get forestTheme {
-    return _buildTheme(
-      brightness: Brightness.dark,
-      primary: const Color(0xFF16A34A), // Green
-      secondary: const Color(0xFF84CC16), // Lime
-      bg: const Color(0xFF14532D), // Deep Forest
-      surface: const Color(0xFF166534), // Card Forest
-      textColor: Colors.white,
-    );
-  }
-
-  static ThemeData get sunsetTheme {
-    return _buildTheme(
-      brightness: Brightness.dark,
-      primary: const Color(0xFFEA580C), // Orange
-      secondary: const Color(0xFFFACC15), // Yellow
-      bg: const Color(0xFF7C2D12), // Deep Orange
-      surface: const Color(0xFF9A3412), // Card Orange
-      textColor: Colors.white,
     );
   }
 
@@ -146,7 +107,7 @@ class FitzaTheme {
       cardTheme: CardThemeData(
         color: surface,
         elevation: isDark ? 0 : 2,
-        shadowColor: isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
+        shadowColor: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );

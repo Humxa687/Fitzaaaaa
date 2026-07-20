@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
+import 'weight_ai_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -85,6 +86,15 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
                       _buildMetricRow("Calorie Limit Kept", "24 / 30 Days", Colors.orange, 0.8),
                       const SizedBox(height: 12),
                       _buildMetricRow("Water Target Met", "21 / 30 Days", Colors.blue, 0.7),
+                      const SizedBox(height: 24),
+                      const Text(
+                        "Daily Walking Progress",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildMetricRow("Steps Taken", "${provider.todaySteps} / ${provider.stepGoal}", Colors.deepPurple, provider.todaySteps / provider.stepGoal),
+                      const SizedBox(height: 12),
+                      _buildMetricRow("Distance Covered", "${(provider.todaySteps * 0.000762).toStringAsFixed(2)} km", Colors.blue, (provider.todaySteps * 0.000762) / 5.0),
                     ],
                   ),
                 ),
@@ -94,6 +104,13 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
           ),
         ),
       ),
+      floatingActionButton: _tabController.index == 2 ? FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const WeightAiScreen()));
+        },
+        icon: const Icon(Icons.camera_alt),
+        label: const Text("Scan Weight"),
+      ) : null,
     );
   }
 
@@ -141,7 +158,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
                   barRods: [
                     BarChartRodData(
                       toY: stepsData[index].toDouble(),
-                      color: index == 6 ? FitzaTheme.primaryDark : Colors.grey.withOpacity(0.3),
+                      color: index == 6 ? FitzaTheme.primaryDark : Colors.grey.withValues(alpha: 0.3),
                       width: 16,
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -200,7 +217,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
                   dotData: const FlDotData(show: true),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: FitzaTheme.energyOrange.withOpacity(0.15),
+                    color: FitzaTheme.energyOrange.withValues(alpha: 0.15),
                   ),
                 ),
               ],
@@ -212,9 +229,15 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
   }
 
   Widget _buildWeightChart(FitnessProvider provider, ThemeData theme) {
-    // Weight over past 4 weeks
-    final weightHistory = [75.8, 75.2, 74.8, provider.weight];
-    final weeks = ["Wk 1", "Wk 2", "Wk 3", "Wk 4"];
+    // Dynamic real weight logs, limited to last 10 entries for chart
+    final history = provider.weightLogs.reversed.take(10).toList().reversed.toList();
+    if (history.isEmpty) {
+      return const Center(child: Text("No weight data logged yet."));
+    }
+    
+    // Calculate min and max Y for the chart dynamically
+    double minY = history.map((e) => e.weight).reduce((a, b) => a < b ? a : b) - 2;
+    double maxY = history.map((e) => e.weight).reduce((a, b) => a > b ? a : b) + 2;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,8 +255,14 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
                       int idx = value.toInt();
-                      if (idx >= 0 && idx < weeks.length) {
-                        return Text(weeks[idx], style: const TextStyle(fontSize: 10, color: Colors.grey));
+                      if (idx >= 0 && idx < history.length) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            "${history[idx].date.day}/${history[idx].date.month}",
+                            style: const TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                        );
                       }
                       return const SizedBox.shrink();
                     },
@@ -245,19 +274,19 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
               ),
               borderData: FlBorderData(show: false),
               minX: 0,
-              maxX: 3,
-              minY: 70,
-              maxY: 80,
+              maxX: history.length > 1 ? (history.length - 1).toDouble() : 1.0,
+              minY: minY,
+              maxY: maxY,
               lineBarsData: [
                 LineChartBarData(
-                  spots: List.generate(weightHistory.length, (idx) => FlSpot(idx.toDouble(), weightHistory[idx])),
+                  spots: List.generate(history.length, (idx) => FlSpot(idx.toDouble(), history[idx].weight)),
                   isCurved: true,
                   color: Colors.green,
                   barWidth: 4,
                   dotData: const FlDotData(show: true),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: Colors.green.withOpacity(0.15),
+                    color: Colors.green.withValues(alpha: 0.15),
                   ),
                 ),
               ],
@@ -283,7 +312,7 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
         LinearProgressIndicator(
           value: pct,
           color: color,
-          backgroundColor: color.withOpacity(0.15),
+          backgroundColor: color.withValues(alpha: 0.15),
           minHeight: 8,
           borderRadius: BorderRadius.circular(4),
         ),

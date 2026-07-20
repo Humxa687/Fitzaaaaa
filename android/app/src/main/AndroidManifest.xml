@@ -14,7 +14,7 @@
     <application
         android:label="Fitza"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -40,7 +40,7 @@
             android:value="2" />
             
         <service
-            android:name="nl.birdly.notification_listener_service.NotificationListenerServicePlugin"
+            android:name="notification.listener.service.NotificationListener"
             android:label="notifications"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="true">

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
+import '../auth/login_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -67,6 +72,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _pickImage(FitnessProvider provider) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      provider.updateProfilePicture(image.path);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<FitnessProvider>(context);
@@ -100,10 +113,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Center(
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                      child: Icon(Icons.person, size: 50, color: theme.colorScheme.primary),
+                    InkWell(
+                      onTap: () => _pickImage(provider),
+                      borderRadius: BorderRadius.circular(50),
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                            backgroundImage: provider.profileImagePath != null
+                                ? FileImage(File(provider.profileImagePath!))
+                                : null,
+                            child: provider.profileImagePath == null
+                                ? Icon(Icons.person, size: 50, color: theme.colorScheme.primary)
+                                : null,
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(6),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -167,48 +202,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // App Theme Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("App Theme", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12.0,
-                        runSpacing: 12.0,
-                        children: AppThemeMode.values.map((mode) {
-                          final isSelected = provider.currentTheme == mode;
-                          return ChoiceChip(
-                            label: Text(mode.name.toUpperCase()),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                provider.setTheme(mode);
-                              }
-                            },
-                            selectedColor: theme.colorScheme.primary.withOpacity(0.2),
-                            labelStyle: TextStyle(
-                              color: isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Smart Settings
+              // Settings & Smart Settings
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     children: [
+
                       SwitchListTile(
                         title: const Text("Smart Reminders", style: TextStyle(fontWeight: FontWeight.w500)),
                         subtitle: const Text("Daily step, workout, water intake reminders"),
@@ -223,18 +223,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         },
                         secondary: const Icon(Icons.notifications_active_outlined),
                       ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.watch),
-                        title: const Text("Wear OS Smartwatch Sync"),
-                        subtitle: const Text("Manage wearables and real-time syncing"),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          provider.syncWithWearOS();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Sync command sent to Wear OS Watch!")),
-                          );
+
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Connected Apps
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: Text("Connected Apps", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                      SwitchListTile(
+                        title: const Text("Google Fit"),
+                        subtitle: const Text("Sync steps & calories"),
+                        value: provider.isGoogleFitConnected,
+                        onChanged: (val) async {
+                          if (val) {
+                            bool success = await provider.connectGoogleFit();
+                            if (success) {
+                              final Uri url = Uri.parse('https://play.google.com/store/apps/details?id=com.google.android.apps.fitness');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
+                            } else if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to connect Google Fit")));
+                            }
+                          } else {
+                            await provider.disconnectGoogleFit();
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Google Fit Disconnected")));
+                          }
                         },
+                        secondary: Image.asset("assets/images/google_fit.png", width: 32, height: 32, errorBuilder: (_,__,___) => const Icon(Icons.fitness_center)),
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text("Apple Health"),
+                        subtitle: const Text("Sync steps & calories"),
+                        value: provider.isAppleHealthConnected,
+                        onChanged: (val) async {
+                          if (val) {
+                            bool success = await provider.connectAppleHealth();
+                            if (success) {
+                              // On iOS this would be deep linked to health settings
+                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Open Health app to sync data")));
+                            } else if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to connect Apple Health")));
+                            }
+                          } else {
+                            await provider.disconnectAppleHealth();
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Apple Health Disconnected")));
+                          }
+                        },
+                        secondary: const Icon(Icons.favorite, color: Colors.red),
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text("Samsung Health"),
+                        subtitle: const Text("Sync steps & calories"),
+                        value: provider.isSamsungHealthConnected,
+                        onChanged: (val) async {
+                          if (val) {
+                            bool success = await provider.connectSamsungHealth();
+                            if (success) {
+                              final Uri url = Uri.parse('https://play.google.com/store/apps/details?id=com.sec.android.app.shealth');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
+                            } else if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to connect Samsung Health")));
+                            }
+                          } else {
+                            await provider.disconnectSamsungHealth();
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Samsung Health Disconnected")));
+                          }
+                        },
+                        secondary: const Icon(Icons.health_and_safety, color: Colors.blue),
                       ),
                     ],
                   ),
