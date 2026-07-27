@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/fitness_provider.dart';
-import 'package:country_picker/country_picker.dart';
-
+import '../../core/theme.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -14,23 +15,50 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
-  final _formKey1 = GlobalKey<FormState>();
-  final _formKey2 = GlobalKey<FormState>();
+  int _currentStep = 0;
+
+  // Onboarding Selection State
+  String _selectedGender = "Male";
+  int _selectedAge = 26;
   
-  // Step 1
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  String? _countryValue;
-  String? _stateValue;
-  String? _cityValue;
+  // Height State
+  bool _isHeightCm = true; 
+  double _heightCm = 175.0; 
+  int _heightFt = 5;
+  int _heightInches = 9;
 
-  // Step 2
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _heightController = TextEditingController();
-  String _selectedGoal = "Build Muscle";
+  // Weight State
+  bool _isWeightKg = true; 
+  int _weightKg = 72; // Make it int for picker
+  int _weightLbs = 158; 
 
-  int _currentPage = 0;
+  // Goals & Activity & New Profile Fields
+  String _selectedGoal = "Muscle Gain";
+  String _selectedActivity = "Moderately Active";
+  String _selectedFitnessLevel = "Beginner";
+  String _selectedWorkoutLocation = "Home";
+  int _selectedWorkoutDays = 3;
+  int _selectedWorkoutDuration = 45;
+
+  final List<String> _goals = [
+    "Muscle Gain",
+    "Fat Loss",
+    "Strength",
+    "Endurance",
+    "General Fitness"
+  ];
+
+  final List<String> _fitnessLevels = ["Beginner", "Intermediate", "Advanced"];
+  final List<String> _workoutLocations = ["Home", "Gym"];
+  final List<int> _workoutDurations = [30, 45, 60, 90];
+  
+  final List<Map<String, String>> _activityLevels = [
+    {"title": "Sedentary", "desc": "Little to no exercise, desk job"},
+    {"title": "Lightly Active", "desc": "Light exercise 1-3 days/week"},
+    {"title": "Moderately Active", "desc": "Moderate exercise 3-5 days/week"},
+    {"title": "Very Active", "desc": "Hard exercise 6-7 days/week"},
+    {"title": "Athlete", "desc": "Intense physical training daily"},
+  ];
 
   Future<void> _requestPermissions() async {
     await [
@@ -39,225 +67,636 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ].request();
   }
 
-  void _nextPage() {
-    if (_formKey1.currentState!.validate()) {
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
-    }
-  }
-
-  void _submit() async {
-    if (_formKey2.currentState!.validate()) {
-      final provider = Provider.of<FitnessProvider>(context, listen: false);
-      
-      provider.updateProfile(
-        name: _nameController.text,
-        phone: _phoneController.text,
-        country: _countryValue,
-        state: _stateValue,
-        age: int.parse(_ageController.text),
-        height: double.parse(_heightController.text),
-        weight: double.parse(_weightController.text),
-        fitnessGoal: _selectedGoal,
+  void _nextStep() {
+    if (_currentStep < 3) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
       );
-      
-      await _requestPermissions();
-      provider.completeOnboarding();
+    } else {
+      _submitProfile();
     }
   }
 
-  Widget _buildStep1() {
-    return Form(
-      key: _formKey1,
-      child: ListView(
-        padding: const EdgeInsets.all(24.0),
-        children: [
-          const SizedBox(height: 40),
-          const Icon(Icons.person_pin, size: 80, color: Colors.blueAccent),
-          const SizedBox(height: 20),
-          const Text(
-            "Welcome to Fitza!",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            "Let's get to know you better. Step 1 of 2",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          TextFormField(
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: "Full Name", border: OutlineInputBorder(), prefixIcon: Icon(Icons.person)),
-            validator: (value) => value!.isEmpty ? "Required" : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: "Phone Number", border: OutlineInputBorder(), prefixIcon: Icon(Icons.phone)),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    showCountryPicker(
-                      context: context,
-                      showPhoneCode: false,
-                      onSelect: (Country country) {
-                        setState(() {
-                          _countryValue = country.name;
-                        });
-                      },
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.public, color: Colors.grey),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _countryValue ?? "Select Country",
-                            style: TextStyle(
-                              color: _countryValue == null ? Colors.grey.shade600 : Colors.black87,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextFormField(
-                  decoration: const InputDecoration(labelText: "State", border: OutlineInputBorder(), prefixIcon: Icon(Icons.map)),
-                  onChanged: (val) => _stateValue = val,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: _nextPage,
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: const Text("Next Step", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+  void _prevStep() {
+    if (_currentStep > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
-  Widget _buildStep2() {
-    return Form(
-      key: _formKey2,
-      child: ListView(
-        padding: const EdgeInsets.all(24.0),
-        children: [
-          const SizedBox(height: 40),
-          const Icon(Icons.fitness_center, size: 80, color: Colors.orange),
-          const SizedBox(height: 20),
-          const Text(
-            "Your Fitness Profile",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            "Almost done! Step 2 of 2",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _ageController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: "Age", border: OutlineInputBorder(), prefixIcon: Icon(Icons.cake)),
-                  validator: (value) => value!.isEmpty ? "Required" : null,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextFormField(
-                  controller: _weightController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: "Weight (kg)", border: OutlineInputBorder(), prefixIcon: Icon(Icons.monitor_weight)),
-                  validator: (value) => value!.isEmpty ? "Required" : null,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _heightController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: "Height (cm)", border: OutlineInputBorder(), prefixIcon: Icon(Icons.height)),
-            validator: (value) => value!.isEmpty ? "Required" : null,
-          ),
-          const SizedBox(height: 24),
-          const Text("Primary Fitness Goal", style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _selectedGoal,
-            decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.flag)),
-            items: ["Lose Weight", "Build Muscle", "Stay Fit", "Marathon Training"].map((g) {
-              return DropdownMenuItem(value: g, child: Text(g));
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _selectedGoal = val);
-            },
-          ),
-          const SizedBox(height: 40),
-          Row(
-            children: [
-              TextButton(
-                onPressed: () {
-                  _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
-                },
-                child: const Text("Back"),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: const Text("Start My Journey!", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+  void _submitProfile() async {
+    final provider = Provider.of<FitnessProvider>(context, listen: false);
+
+    double finalHeight = _isHeightCm ? _heightCm : ((_heightFt * 30.48) + (_heightInches * 2.54));
+    double finalWeight = _isWeightKg ? _weightKg.toDouble() : (_weightLbs / 2.20462);
+
+    await provider.updateProfile(
+      name: provider.userName,
+      age: _selectedAge,
+      height: double.parse(finalHeight.toStringAsFixed(1)),
+      weight: double.parse(finalWeight.toStringAsFixed(1)),
+      gender: _selectedGender,
+      activityLevel: _selectedActivity,
+      heightUnit: _isHeightCm ? "cm" : "ft/in",
+      weightUnit: _isWeightKg ? "kg" : "lbs",
+      fitnessGoal: _selectedGoal,
+      fitnessLevel: _selectedFitnessLevel,
+      workoutLocation: _selectedWorkoutLocation,
+      workoutDays: _selectedWorkoutDays,
+      workoutDuration: _selectedWorkoutDuration,
     );
+
+    await _requestPermissions();
+    provider.completeOnboarding();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final provider = Provider.of<FitnessProvider>(context);
+
     return Scaffold(
       body: SafeArea(
-        child: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          onPageChanged: (index) => setState(() => _currentPage = index),
+        child: Column(
           children: [
-            _buildStep1(),
-            _buildStep2(),
+            // Top Step Progress Indicator (Step 1 of 4)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      onPressed: _prevStep,
+                    )
+                  else
+                    const SizedBox(width: 40),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          "STEP ${_currentStep + 1} OF 4",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: FitzaTheme.energyOrange,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (_currentStep + 1) / 4.0,
+                            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                            color: FitzaTheme.energyOrange,
+                            minHeight: 6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (idx) => setState(() => _currentStep = idx),
+                children: [
+                  _buildGenderAgeStep(theme, provider),
+                  _buildHeightWeightStep(theme),
+                  _buildGoalsFitnessLevelStep(theme),
+                  _buildAvailabilityStep(theme),
+                ],
+              ),
+            ),
+
+            // Bottom Navigation Next Button
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _nextStep,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FitzaTheme.energyOrange,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    elevation: 4,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _currentStep == 3 ? "Complete & Start Fitza 🚀" : "Continue",
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  // --- Step 1: Gender & Age ---
+  Widget _buildGenderAgeStep(ThemeData theme, FitnessProvider provider) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Welcome, Let's Setup Your Profile 👋", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text("Pre-filled from ${provider.userEmail}", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+
+          const SizedBox(height: 32),
+
+          const Text("Select Gender", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildGenderCard("Male", "👨", theme),
+              const SizedBox(width: 12),
+              _buildGenderCard("Female", "👩", theme),
+              const SizedBox(width: 12),
+              _buildGenderCard("Other", "👤", theme),
+            ],
+          ),
+
+          const SizedBox(height: 36),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Select Your Age", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text("$_selectedAge Years Old", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: FitzaTheme.energyOrange)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Premium Cupertino Picker for Age
+          SizedBox(
+            height: 180,
+            child: CupertinoPicker(
+              itemExtent: 50,
+              diameterRatio: 1.2,
+              scrollController: FixedExtentScrollController(initialItem: _selectedAge - 10),
+              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(background: FitzaTheme.energyOrange.withOpacity(0.1)),
+              onSelectedItemChanged: (index) {
+                setState(() => _selectedAge = 10 + index);
+              },
+              children: List.generate(91, (index) {
+                final age = 10 + index;
+                final isSelected = age == _selectedAge;
+                return Center(
+                  child: Text(
+                    "$age",
+                    style: TextStyle(
+                      fontSize: isSelected ? 28 : 22,
+                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+                      color: isSelected ? FitzaTheme.energyOrange : theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ).animate().fadeIn(duration: 300.ms),
+    );
+  }
+
+  Widget _buildGenderCard(String label, String emoji, ThemeData theme) {
+    final isSel = _selectedGender == label;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedGender = label),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: isSel ? FitzaTheme.energyOrange.withValues(alpha: 0.15) : theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.primary.withValues(alpha: 0.15),
+              width: isSel ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 32)),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Step 2: Height & Weight ---
+  Widget _buildHeightWeightStep(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Height & Weight 📏", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text("Used to compute precise BMI and calorie burn.", style: TextStyle(color: Colors.grey)),
+
+          const SizedBox(height: 24),
+
+          // Height Section
+          const Text("Your Height", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Center(
+            child: _buildUnitToggle(
+              "cm", "ft/in", _isHeightCm,
+              (v) => setState(() => _isHeightCm = v),
+              theme
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          if (_isHeightCm) ...[
+            Center(
+              child: Text(
+                "${_heightCm.round()} cm",
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: FitzaTheme.energyOrange),
+              ),
+            ),
+            Slider(
+              value: _heightCm,
+              min: 100,
+              max: 250,
+              divisions: 150,
+              activeColor: FitzaTheme.energyOrange,
+              onChanged: (val) => setState(() => _heightCm = val),
+            ),
+          ] else ...[
+            Center(
+              child: Text(
+                "$_heightFt' $_heightInches\"",
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: FitzaTheme.energyOrange),
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _heightFt.toDouble(),
+                    min: 3,
+                    max: 8,
+                    divisions: 5,
+                    activeColor: FitzaTheme.energyOrange,
+                    onChanged: (val) => setState(() => _heightFt = val.round()),
+                  ),
+                ),
+                Expanded(
+                  child: Slider(
+                    value: _heightInches.toDouble(),
+                    min: 0,
+                    max: 11,
+                    divisions: 11,
+                    activeColor: FitzaTheme.energyOrange,
+                    onChanged: (val) => setState(() => _heightInches = val.round()),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 36),
+
+          // Weight Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Your Weight", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              _buildUnitToggle(
+                "kg", "lbs", _isWeightKg,
+                (v) => setState(() => _isWeightKg = v),
+                theme
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Premium Cupertino Picker for Weight
+          SizedBox(
+            height: 180,
+            child: CupertinoPicker(
+              itemExtent: 50,
+              diameterRatio: 1.2,
+              scrollController: FixedExtentScrollController(
+                initialItem: _isWeightKg ? _weightKg - 30 : _weightLbs - 66
+              ),
+              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(background: FitzaTheme.energyOrange.withOpacity(0.1)),
+              onSelectedItemChanged: (index) {
+                setState(() {
+                  if (_isWeightKg) {
+                    _weightKg = 30 + index;
+                  } else {
+                    _weightLbs = 66 + index;
+                  }
+                });
+              },
+              children: List.generate(_isWeightKg ? 271 : 595, (index) {
+                final weight = (_isWeightKg ? 30 : 66) + index;
+                final isSelected = weight == (_isWeightKg ? _weightKg : _weightLbs);
+                return Center(
+                  child: Text(
+                    "$weight ${_isWeightKg ? 'kg' : 'lbs'}",
+                    style: TextStyle(
+                      fontSize: isSelected ? 28 : 22,
+                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+                      color: isSelected ? FitzaTheme.energyOrange : theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ).animate().fadeIn(duration: 300.ms),
+    );
+  }
+
+  Widget _buildUnitToggle(String label1, String label2, bool isLabel1, Function(bool) onChanged, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildUnitChip(label1, isLabel1, () => onChanged(true)),
+          _buildUnitChip(label2, !isLabel1, () => onChanged(false)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnitChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? FitzaTheme.energyOrange : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Step 3: Goals, Fitness Level & Location ---
+  Widget _buildGoalsFitnessLevelStep(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Personalize Your Plan 🎯", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text("We use this to auto-generate your workouts.", style: TextStyle(color: Colors.grey)),
+
+          const SizedBox(height: 24),
+
+          const Text("Primary Fitness Goal", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _goals.map((g) {
+              final isSel = _selectedGoal == g;
+              return ChoiceChip(
+                label: Text(g),
+                selected: isSel,
+                onSelected: (val) => setState(() => _selectedGoal = g),
+                selectedColor: FitzaTheme.energyOrange.withOpacity(0.2),
+                checkmarkColor: FitzaTheme.energyOrange,
+                labelStyle: TextStyle(
+                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 32),
+
+          const Text("Current Fitness Level", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _fitnessLevels.map((lvl) {
+              final isSel = _selectedFitnessLevel == lvl;
+              return ChoiceChip(
+                label: Text(lvl),
+                selected: isSel,
+                onSelected: (val) => setState(() => _selectedFitnessLevel = lvl),
+                selectedColor: FitzaTheme.energyOrange.withOpacity(0.2),
+                checkmarkColor: FitzaTheme.energyOrange,
+                labelStyle: TextStyle(
+                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 32),
+
+          const Text("Where do you workout?", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(
+            children: _workoutLocations.map((loc) {
+              final isSel = _selectedWorkoutLocation == loc;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedWorkoutLocation = loc),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: isSel ? FitzaTheme.energyOrange.withOpacity(0.15) : theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.primary.withOpacity(0.15),
+                        width: isSel ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(loc == "Home" ? Icons.home_rounded : Icons.fitness_center_rounded, 
+                             size: 32, 
+                             color: isSel ? FitzaTheme.energyOrange : Colors.grey),
+                        const SizedBox(height: 8),
+                        Text(loc, style: TextStyle(fontWeight: FontWeight.bold, color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface)),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ).animate().fadeIn(duration: 300.ms),
+    );
+  }
+
+  // --- Step 4: Availability & Activity Level ---
+  Widget _buildAvailabilityStep(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Your Availability ⏱️", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text("Let's build a schedule that works for you.", style: TextStyle(color: Colors.grey)),
+
+          const SizedBox(height: 24),
+
+          const Text("Workout Days per Week", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (index) {
+              int days = index + 1;
+              bool isSel = _selectedWorkoutDays == days;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedWorkoutDays = days),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: isSel ? FitzaTheme.energyOrange : Colors.grey.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    "$days",
+                    style: TextStyle(
+                      color: isSel ? Colors.white : theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+
+          const SizedBox(height: 32),
+
+          const Text("Average Workout Duration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: _workoutDurations.map((duration) {
+              bool isSel = _selectedWorkoutDuration == duration;
+              return ChoiceChip(
+                label: Text("$duration min"),
+                selected: isSel,
+                onSelected: (val) => setState(() => _selectedWorkoutDuration = duration),
+                selectedColor: FitzaTheme.energyOrange.withOpacity(0.2),
+                checkmarkColor: FitzaTheme.energyOrange,
+                labelStyle: TextStyle(
+                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 32),
+
+          const Text("Daily Activity Level", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ..._activityLevels.map((activity) {
+            final isSel = _selectedActivity == activity["title"];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedActivity = activity["title"]!),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isSel ? FitzaTheme.energyOrange.withValues(alpha: 0.15) : theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.primary.withValues(alpha: 0.15),
+                      width: isSel ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isSel ? Icons.radio_button_checked : Icons.radio_button_off,
+                        color: isSel ? FitzaTheme.energyOrange : Colors.grey,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activity["title"]!,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              activity["desc"]!,
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ).animate().fadeIn(duration: 300.ms),
     );
   }
 }

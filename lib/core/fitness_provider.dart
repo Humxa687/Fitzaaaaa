@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
+
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +15,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:health/health.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'package:fitza/core/services/cloud_sync_service.dart';
+
+
+
+
 
 class WeightLog {
   final String id;
@@ -80,9 +87,10 @@ class FoodLog {
 class FitnessProvider extends ChangeNotifier {
   SharedPreferences? _prefs;
 
-  // --- App Theme State ---
+  // --- App Theme State (Sun & Moon Modes Only) ---
   AppThemeMode _currentTheme = AppThemeMode.dark;
   AppThemeMode get currentTheme => _currentTheme;
+
 
   // --- Auth State ---
   bool _isLoggedIn = false;
@@ -96,26 +104,76 @@ class FitnessProvider extends ChangeNotifier {
   String? _profileImagePath;
   String? get profileImagePath => _profileImagePath;
 
+  bool _isPhoneVerified = false;
+  bool get isPhoneVerified => _isPhoneVerified;
+  String? _verifiedPhoneNumber;
+  String? get verifiedPhoneNumber => _verifiedPhoneNumber;
+  String? _generatedOtp;
+
+
   bool _needsDailyStart = false;
   bool get needsDailyStart => _needsDailyStart;
 
   // --- User Profile ---
+  String _gender = "Male";
+  String get gender => _gender;
   int _age = 26;
   int get age => _age;
   double _height = 178.0; // cm
   double get height => _height;
   double _weight = 74.5; // kg
   double get weight => _weight;
-  String _fitnessGoal = "Weight Loss";
+  String _fitnessGoal = "Lose Weight";
   String get fitnessGoal => _fitnessGoal;
+  String _activityLevel = "Moderately Active";
+  String get activityLevel => _activityLevel;
+
+  String _heightUnit = "cm"; // cm, ft/in
+  String get heightUnit => _heightUnit;
+  String _weightUnit = "kg"; // kg, lbs
+  String get weightUnit => _weightUnit;
+
+  // --- Personalization Additions ---
+  String _fitnessLevel = "Beginner";
+  String get fitnessLevel => _fitnessLevel;
+  String _workoutLocation = "Home";
+  String get workoutLocation => _workoutLocation;
+  int _workoutDays = 3;
+  int get workoutDays => _workoutDays;
+  int _workoutDuration = 45;
+  int get workoutDuration => _workoutDuration;
 
   // --- Goals & Targets ---
   int _stepGoal = 8000;
   int get stepGoal => _stepGoal;
   int _calorieGoal = 2200;
+
   int get calorieGoal => _calorieGoal;
   int _waterGoal = 8;
   int get waterGoal => _waterGoal;
+
+  // --- Smart Calculators ---
+  double get bmr {
+    double b = (10 * _weight) + (6.25 * _height) - (5 * _age);
+    return _gender.toLowerCase() == 'female' ? b - 161 : b + 5;
+  }
+
+  double get tdee {
+    double multiplier = 1.2;
+    switch (_activityLevel) {
+      case "Sedentary": multiplier = 1.2; break;
+      case "Lightly Active": multiplier = 1.375; break;
+      case "Moderately Active": multiplier = 1.55; break;
+      case "Very Active": multiplier = 1.725; break;
+      case "Athlete": multiplier = 1.9; break;
+    }
+    return bmr * multiplier;
+  }
+
+  int get calculatedWaterGoal {
+    // 35ml per kg of body weight
+    return (_weight * 0.035 * 4).round(); // ~250ml per glass -> roughly 4 glasses per liter
+  }
 
   // --- Active Tracker metrics ---
   int _todaySteps = 3450;
@@ -165,49 +223,66 @@ class FitnessProvider extends ChangeNotifier {
     }
   }
 
-  // --- Advanced Music Player State ---
+  // --- Advanced Music Player & External Extractor State ---
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
-  bool get isPlaying => _isPlaying;
+
+  bool _isExternalRemoteMode = false;
+
+  bool get isExternalRemoteMode => _isExternalRemoteMode;
+
+  final Set<String> _favoriteTracks = {};
+  Set<String> get favoriteTracks => _favoriteTracks;
 
   final List<Map<String, String>> _playlist = [
     {
-      "title": "Energy Boost (120 BPM)",
-      "artist": "Fitza Original",
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+      "title": "Blinding Lights",
+      "artist": "The Weeknd",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "coverUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/16/ef/bf16efd6-dbf1-d007-aa4e-c4038a83424d/20UMGIM00877.rgb.jpg/600x600bb.jpg",
+      "source": "web",
+      "durationSeconds": "200",
+      "isLocal": "false"
     },
     {
-      "title": "Running Rhythm",
-      "artist": "Fitza Original",
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+      "title": "Levitating",
+      "artist": "Dua Lipa",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "coverUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/4a/12/32/4a123285-d85f-8646-9d3a-6ee0d49bb9a5/190295286105.jpg/600x600bb.jpg",
+      "source": "spotify",
+      "durationSeconds": "203",
+      "isLocal": "false"
     },
     {
-      "title": "Cool Down Vibes",
-      "artist": "Fitza Original",
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+      "title": "Eye of the Tiger",
+      "artist": "Survivor",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      "coverUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/fe/5f/88/fe5f8842-886f-24d1-f3b1-37f26778939c/074643806222.jpg/600x600bb.jpg",
+      "source": "apple",
+      "durationSeconds": "244",
+      "isLocal": "false"
     },
     {
-      "title": "Heavy Lift Anthem",
-      "artist": "Fitza Iron",
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
-    },
-    {
-      "title": "Cardio Sprint",
-      "artist": "Fitza Beat",
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
-    },
-    {
-      "title": "Meditation Focus",
-      "artist": "Fitza Zen",
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
+      "title": "Stronger",
+      "artist": "Kanye West",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+      "coverUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/49/a2/b5/49a2b5d4-47be-d731-bfb8-1509930f1406/00602517443187.rgb.jpg/600x600bb.jpg",
+      "source": "youtube",
+      "durationSeconds": "311",
+      "isLocal": "false"
     }
   ];
+
   int _currentTrackIndex = 0;
 
-  String? get trackTitle => _playlist[_currentTrackIndex]["title"];
-  String? get trackArtist => _playlist[_currentTrackIndex]["artist"];
+  String? get trackTitle => _playlist.isNotEmpty ? _playlist[_currentTrackIndex]["title"] : "No Track";
+  String? get trackArtist => _playlist.isNotEmpty ? _playlist[_currentTrackIndex]["artist"] : "Unknown Artist";
+  String? get trackCoverUrl => _playlist.isNotEmpty ? _playlist[_currentTrackIndex]["coverUrl"] : null;
+  String? get trackSource => _playlist.isNotEmpty ? _playlist[_currentTrackIndex]["source"] ?? "fitza" : "fitza";
   List<Map<String, String>> get playlist => _playlist;
   int get currentTrackIndex => _currentTrackIndex;
+
+  bool get isCurrentTrackFavorite => trackTitle != null && _favoriteTracks.contains(trackTitle);
 
   Duration _currentPosition = Duration.zero;
   Duration get currentPosition => _currentPosition;
@@ -221,6 +296,7 @@ class FitnessProvider extends ChangeNotifier {
   String? get trackApp => _trackApp;
   double _musicProgress = 0.0;
   double get musicProgress => _musicProgress;
+
 
   // --- Settings & AI Logs ---
   bool _pushNotificationsEnabled = true;
@@ -367,9 +443,22 @@ class FitnessProvider extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     _isLoggedIn = _prefs?.getBool('isLoggedIn') ?? false;
     _hasCompletedOnboarding = _prefs?.getBool('hasCompletedOnboarding') ?? false;
-    _userName = _prefs?.getString('${_userEmail}_userName') ?? _prefs?.getString('userName') ?? "Alex Fit";
     _userEmail = _prefs?.getString('userEmail') ?? "alex.fitza@gmail.com";
-    _profileImagePath = _prefs?.getString('${_userEmail}_profileImagePath');
+    _userName = _prefs?.getString('${_userEmail}_userName') ?? _prefs?.getString('userName') ?? "Alex Fit";
+    _profileImagePath = _prefs?.getString('${_userEmail}_profileImagePath') ?? _prefs?.getString('profileImagePath');
+
+    // Auto-restore cloud payload on startup if logged in
+    final String activeId = _prefs?.getString('userId') ?? _userEmail;
+    if (_isLoggedIn && activeId.isNotEmpty) {
+      final cloudData = await CloudSyncService.restoreUserDataFromCloud(activeId);
+      if (cloudData != null) {
+        _restoreFromCloudPayload(cloudData);
+      }
+    }
+
+    _isPhoneVerified = _prefs?.getBool('${_userEmail}_isPhoneVerified') ?? _prefs?.getBool('isPhoneVerified') ?? false;
+    _verifiedPhoneNumber = _prefs?.getString('${_userEmail}_verifiedPhoneNumber') ?? _prefs?.getString('verifiedPhoneNumber');
+
     _age = _prefs?.getInt('${_userEmail}_age') ?? _prefs?.getInt('age') ?? 26;
     _height = _prefs?.getDouble('${_userEmail}_height') ?? _prefs?.getDouble('height') ?? 178.0;
     _weight = _prefs?.getDouble('${_userEmail}_weight') ?? _prefs?.getDouble('weight') ?? 74.5;
@@ -433,7 +522,7 @@ class FitnessProvider extends ChangeNotifier {
       ];
     }
     
-    final themeIndex = _prefs?.getInt('themeMode') ?? 1; // Default dark
+    final themeIndex = _prefs?.getInt('themeMode') ?? 2; // Default system
     if (themeIndex >= 0 && themeIndex < AppThemeMode.values.length) {
       _currentTheme = AppThemeMode.values[themeIndex];
     }
@@ -462,34 +551,194 @@ class FitnessProvider extends ChangeNotifier {
         nextMusic();
       }
     });
-    _audioPlayer.setSourceUrl(_playlist[_currentTrackIndex]["url"]!);
+    final currentTrack = _playlist[_currentTrackIndex];
+    if (currentTrack["isLocal"] == "true") {
+      _audioPlayer.setSourceDeviceFile(currentTrack["url"]!);
+    } else {
+      _audioPlayer.setSourceUrl(currentTrack["url"]!);
+    }
   }
 
+  Future<void> importAndPlayLocalMusic() async {
+
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        String fileName = result.files.single.name;
+        
+        _playlist.insert(0, {
+          "title": fileName,
+          "artist": "Local Track",
+          "url": filePath,
+          "coverUrl": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
+          "source": "local",
+          "isLocal": "true"
+        });
+        
+        _currentTrackIndex = 0;
+        await _audioPlayer.play(DeviceFileSource(filePath));
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("File Import Error: $e");
+    }
+  }
+
+
+  void toggleFavoriteTrack() {
+    if (trackTitle != null) {
+      if (_favoriteTracks.contains(trackTitle!)) {
+        _favoriteTracks.remove(trackTitle!);
+      } else {
+        _favoriteTracks.add(trackTitle!);
+      }
+      notifyListeners();
+    }
+  }
+
+  bool _isExternalPlaying = false;
+
+  Timer? _externalPositionTimer;
+
+  bool get isPlaying => _isExternalRemoteMode ? _isExternalPlaying : _isPlaying;
+
+  void setExternalRemoteMode(bool enabled) {
+    _isExternalRemoteMode = enabled;
+    if (enabled) {
+      checkDeviceExternalAudioActive();
+    } else {
+      _externalPositionTimer?.cancel();
+    }
+    notifyListeners();
+  }
+
+  Future<void> checkDeviceExternalAudioActive() async {
+    final active = await NativeMediaController.isMusicActive();
+    _isExternalPlaying = active;
+    if (_isExternalPlaying) {
+      _startExternalPositionTimer();
+    }
+    notifyListeners();
+  }
+
+  void _startExternalPositionTimer() {
+    _externalPositionTimer?.cancel();
+    _externalPositionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isExternalPlaying) {
+        if (_totalDuration.inSeconds == 0) {
+          _totalDuration = const Duration(minutes: 3, seconds: 30);
+        }
+        if (_currentPosition.inSeconds < _totalDuration.inSeconds) {
+          _currentPosition += const Duration(seconds: 1);
+        } else {
+          _currentPosition = Duration.zero;
+        }
+        notifyListeners();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> sendExternalRemoteControl(String action) async {
+    switch (action) {
+      case 'play_pause':
+        await NativeMediaController.playPause();
+        _isExternalPlaying = !_isExternalPlaying;
+        if (_isExternalPlaying) {
+          _startExternalPositionTimer();
+        } else {
+          _externalPositionTimer?.cancel();
+        }
+        notifyListeners();
+        break;
+      case 'next':
+        await NativeMediaController.next();
+        nextMusic();
+        break;
+      case 'previous':
+        await NativeMediaController.previous();
+        prevMusic();
+        break;
+      case 'stop':
+        await NativeMediaController.stop();
+        _isExternalPlaying = false;
+        _externalPositionTimer?.cancel();
+        notifyListeners();
+        break;
+    }
+  }
+
+
   Future<void> playPauseMusic() async {
+    if (_isExternalRemoteMode) {
+      await sendExternalRemoteControl('play_pause');
+      return;
+    }
+
     if (_isPlaying) {
       await _audioPlayer.pause();
     } else {
-      await _audioPlayer.play(UrlSource(_playlist[_currentTrackIndex]["url"]!));
+      if (_playlist.isEmpty) return;
+      final currentTrack = _playlist[_currentTrackIndex];
+      if (currentTrack["isLocal"] == "true") {
+        await _audioPlayer.play(DeviceFileSource(currentTrack["url"]!));
+      } else {
+        await _audioPlayer.play(UrlSource(currentTrack["url"]!));
+      }
     }
   }
 
   Future<void> nextMusic() async {
+    if (_isExternalRemoteMode) {
+      await sendExternalRemoteControl('next');
+      return;
+    }
+
+    if (_playlist.isEmpty) return;
     _currentTrackIndex = (_currentTrackIndex + 1) % _playlist.length;
-    await _audioPlayer.play(UrlSource(_playlist[_currentTrackIndex]["url"]!));
+    final currentTrack = _playlist[_currentTrackIndex];
+    if (currentTrack["isLocal"] == "true") {
+      await _audioPlayer.play(DeviceFileSource(currentTrack["url"]!));
+    } else {
+      await _audioPlayer.play(UrlSource(currentTrack["url"]!));
+    }
     notifyListeners();
   }
 
   Future<void> prevMusic() async {
-    _currentTrackIndex = (_currentTrackIndex - 1) < 0 ? _playlist.length - 1 : (_currentTrackIndex - 1);
-    await _audioPlayer.play(UrlSource(_playlist[_currentTrackIndex]["url"]!));
+    if (_isExternalRemoteMode) {
+      await sendExternalRemoteControl('previous');
+      return;
+    }
+
+    if (_playlist.isEmpty) return;
+    _currentTrackIndex = (_currentTrackIndex - 1 + _playlist.length) % _playlist.length;
+    final currentTrack = _playlist[_currentTrackIndex];
+    if (currentTrack["isLocal"] == "true") {
+      await _audioPlayer.play(DeviceFileSource(currentTrack["url"]!));
+    } else {
+      await _audioPlayer.play(UrlSource(currentTrack["url"]!));
+    }
     notifyListeners();
   }
 
   Future<void> playTrackAtIndex(int index) async {
+    if (index < 0 || index >= _playlist.length) return;
     _currentTrackIndex = index;
-    await _audioPlayer.play(UrlSource(_playlist[_currentTrackIndex]["url"]!));
+    final currentTrack = _playlist[_currentTrackIndex];
+    if (currentTrack["isLocal"] == "true") {
+      await _audioPlayer.play(DeviceFileSource(currentTrack["url"]!));
+    } else {
+      await _audioPlayer.play(UrlSource(currentTrack["url"]!));
+    }
     notifyListeners();
   }
+
 
   Future<void> seekTo(Duration position) async {
     await _audioPlayer.seek(position);
@@ -513,31 +762,125 @@ class FitnessProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Auth Actions ---
+  // --- Auth Actions & Cloud Data Sync ---
   Future<void> loginWithGoogle(String mockName, String mockEmail) async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
       final GoogleSignInAccount? account = await googleSignIn.signIn();
       if (account != null) {
         _isLoggedIn = true;
-        _userName = account.displayName ?? mockName;
         _userEmail = account.email;
+        
+        if (account.displayName != null && account.displayName!.trim().isNotEmpty) {
+          _userName = account.displayName!.trim();
+        } else {
+          _userName = mockName;
+        }
+
+        if (account.photoUrl != null && account.photoUrl!.isNotEmpty) {
+          _profileImagePath = account.photoUrl;
+          await _prefs?.setString('${_userEmail}_profileImagePath', account.photoUrl!);
+          await _prefs?.setString('profileImagePath', account.photoUrl!);
+        }
+
         await _prefs?.setBool('isLoggedIn', true);
         await _prefs?.setString('userName', _userName);
         await _prefs?.setString('userEmail', _userEmail);
-        await _initPrefs();
+        await _prefs?.setString('userId', account.id);
+        await _prefs?.setString('${_userEmail}_userName', _userName);
+
+        // Auto-restore cloud data for Google Account
+        final restoredCloudData = await CloudSyncService.restoreUserDataFromCloud(account.id);
+        if (restoredCloudData != null) {
+          _restoreFromCloudPayload(restoredCloudData);
+        }
+
+        await syncDataToCloud();
         notifyListeners();
+        return;
       }
     } catch (error) {
-      debugPrint("Google Sign In failed: $error. Falling back to mock login for testing.");
-      _isLoggedIn = true;
-      _userName = mockName;
-      _userEmail = mockEmail;
-      await _prefs?.setBool('isLoggedIn', true);
-      await _prefs?.setString('userName', _userName);
-      await _prefs?.setString('userEmail', _userEmail);
-      await _initPrefs();
-      notifyListeners();
+      debugPrint("Google Sign In exception: $error. Falling back to test user session.");
+    }
+
+    _isLoggedIn = true;
+    _userName = mockName;
+    _userEmail = mockEmail;
+    await _prefs?.setBool('isLoggedIn', true);
+    await _prefs?.setString('userName', _userName);
+    await _prefs?.setString('userEmail', _userEmail);
+
+    final restoredCloudData = await CloudSyncService.restoreUserDataFromCloud(_userEmail);
+    if (restoredCloudData != null) {
+      _restoreFromCloudPayload(restoredCloudData);
+    }
+
+    await syncDataToCloud();
+    notifyListeners();
+  }
+
+  Future<void> syncDataToCloud() async {
+    final String activeId = _prefs?.getString('userId') ?? _userEmail;
+    if (activeId.isEmpty) return;
+
+    final payload = {
+      'userId': activeId,
+      'userName': _userName,
+      'userEmail': _userEmail,
+      'profileImagePath': _profileImagePath,
+      'gender': _gender,
+      'age': _age,
+      'height': _height,
+      'weight': _weight,
+      'fitnessGoal': _fitnessGoal,
+      'activityLevel': _activityLevel,
+      'heightUnit': _heightUnit,
+      'weightUnit': _weightUnit,
+      'stepGoal': _stepGoal,
+      'calorieGoal': _calorieGoal,
+      'waterGoal': _waterGoal,
+      'todaySteps': _todaySteps,
+      'todayWater': _todayWater,
+      'userXp': _userXp,
+      'userLevel': userLevel,
+      'currentStreak': _currentStreak,
+      'isPhoneVerified': _isPhoneVerified,
+      'verifiedPhoneNumber': _verifiedPhoneNumber,
+      'currentTheme': _currentTheme == AppThemeMode.light ? 'light' : 'dark',
+      'weightLogs': _weightLogs.map((e) => e.toJson()).toList(),
+    };
+
+    await CloudSyncService.saveUserDataToCloud(activeId, payload);
+  }
+
+  void _restoreFromCloudPayload(Map<String, dynamic> data) {
+    if (data['userName'] != null) _userName = data['userName'];
+    if (data['userEmail'] != null) _userEmail = data['userEmail'];
+    if (data['profileImagePath'] != null) _profileImagePath = data['profileImagePath'];
+    if (data['gender'] != null) _gender = data['gender'];
+    if (data['age'] != null) _age = data['age'];
+    if (data['height'] != null) _height = (data['height'] as num).toDouble();
+    if (data['weight'] != null) _weight = (data['weight'] as num).toDouble();
+    if (data['fitnessGoal'] != null) _fitnessGoal = data['fitnessGoal'];
+    if (data['activityLevel'] != null) _activityLevel = data['activityLevel'];
+    if (data['heightUnit'] != null) _heightUnit = data['heightUnit'];
+    if (data['weightUnit'] != null) _weightUnit = data['weightUnit'];
+    if (data['stepGoal'] != null) _stepGoal = data['stepGoal'];
+    if (data['calorieGoal'] != null) _calorieGoal = data['calorieGoal'];
+    if (data['waterGoal'] != null) _waterGoal = data['waterGoal'];
+    if (data['todaySteps'] != null) _todaySteps = data['todaySteps'];
+    if (data['todayWater'] != null) _todayWater = data['todayWater'];
+    if (data['userXp'] != null) _userXp = data['userXp'];
+    if (data['currentStreak'] != null) _currentStreak = data['currentStreak'];
+    if (data['isPhoneVerified'] != null) _isPhoneVerified = data['isPhoneVerified'];
+    if (data['verifiedPhoneNumber'] != null) _verifiedPhoneNumber = data['verifiedPhoneNumber'];
+    if (data['currentTheme'] != null) {
+      _currentTheme = data['currentTheme'] == 'light' ? AppThemeMode.light : AppThemeMode.dark;
+    }
+
+    if (data['weightLogs'] != null) {
+      final List rawLogs = data['weightLogs'];
+      _weightLogs = rawLogs.map((e) => WeightLog.fromJson(Map<String, dynamic>.from(e))).toList();
     }
   }
 
@@ -546,6 +889,33 @@ class FitnessProvider extends ChangeNotifier {
     await _prefs?.setBool('isLoggedIn', false);
     notifyListeners();
   }
+
+
+  // --- Phone OTP Verification & Database Methods ---
+  Future<String> sendPhoneOtp(String phoneNumber) async {
+    _verifiedPhoneNumber = phoneNumber;
+    final random = Random();
+    _generatedOtp = (100000 + random.nextInt(900000)).toString();
+    debugPrint("SMS OTP generated for $phoneNumber: $_generatedOtp");
+    notifyListeners();
+    return _generatedOtp!;
+  }
+
+  Future<bool> verifyPhoneOtp(String enteredCode) async {
+    if (_generatedOtp != null && enteredCode.trim() == _generatedOtp!.trim()) {
+      _isPhoneVerified = true;
+      await _prefs?.setBool('${_userEmail}_isPhoneVerified', true);
+      await _prefs?.setBool('isPhoneVerified', true);
+      if (_verifiedPhoneNumber != null) {
+        await _prefs?.setString('${_userEmail}_verifiedPhoneNumber', _verifiedPhoneNumber!);
+        await _prefs?.setString('verifiedPhoneNumber', _verifiedPhoneNumber!);
+      }
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
 
   // --- Profile Actions ---
   Future<void> setGeminiApiKey(String key) async {
@@ -559,26 +929,103 @@ class FitnessProvider extends ChangeNotifier {
     required int age,
     required double height,
     required double weight,
+    String? gender,
+    String? activityLevel,
+    String? heightUnit,
+    String? weightUnit,
     String? phone,
     String? country,
     String? state,
     String? fitnessGoal,
+    String? fitnessLevel,
+    String? workoutLocation,
+    int? workoutDays,
+    int? workoutDuration,
   }) async {
     _userName = name;
     _age = age;
     _height = height;
     _weight = weight;
+    if (gender != null) _gender = gender;
+    if (activityLevel != null) _activityLevel = activityLevel;
+    if (heightUnit != null) _heightUnit = heightUnit;
+    if (weightUnit != null) _weightUnit = weightUnit;
     if (fitnessGoal != null) _fitnessGoal = fitnessGoal;
+
+    if (fitnessLevel != null) _fitnessLevel = fitnessLevel;
+    if (workoutLocation != null) _workoutLocation = workoutLocation;
+    if (workoutDays != null) _workoutDays = workoutDays;
+    if (workoutDuration != null) _workoutDuration = workoutDuration;
+
+    // Smart Auto-Calculations
+    _calorieGoal = _calculateBmrCalories();
+    _waterGoal = (_weight * 0.033 * 4).round().clamp(6, 16);
+    
+    switch (_activityLevel) {
+      case 'Sedentary':
+        _stepGoal = 6000;
+        break;
+      case 'Lightly Active':
+        _stepGoal = 8000;
+        break;
+      case 'Moderately Active':
+        _stepGoal = 10000;
+        break;
+      case 'Very Active':
+        _stepGoal = 12000;
+        break;
+      case 'Athlete':
+        _stepGoal = 15000;
+        break;
+      default:
+        _stepGoal = 8000;
+    }
+
     await _prefs?.setString('${_userEmail}_userName', name);
     await _prefs?.setInt('${_userEmail}_age', age);
     await _prefs?.setDouble('${_userEmail}_height', height);
     await _prefs?.setDouble('${_userEmail}_weight', weight);
-    if (phone != null) await _prefs?.setString('${_userEmail}_phone', phone);
-    if (country != null) await _prefs?.setString('${_userEmail}_country', country);
-    if (state != null) await _prefs?.setString('${_userEmail}_state', state);
-    if (fitnessGoal != null) await _prefs?.setString('${_userEmail}_fitnessGoal', fitnessGoal);
+    await _prefs?.setString('${_userEmail}_gender', _gender);
+    await _prefs?.setString('${_userEmail}_activityLevel', _activityLevel);
+    await _prefs?.setString('${_userEmail}_heightUnit', _heightUnit);
+    await _prefs?.setString('${_userEmail}_weightUnit', _weightUnit);
+    await _prefs?.setString('${_userEmail}_fitnessGoal', _fitnessGoal);
+    await _prefs?.setString('${_userEmail}_fitnessLevel', _fitnessLevel);
+    await _prefs?.setString('${_userEmail}_workoutLocation', _workoutLocation);
+    await _prefs?.setInt('${_userEmail}_workoutDays', _workoutDays);
+    await _prefs?.setInt('${_userEmail}_workoutDuration', _workoutDuration);
+    await _prefs?.setInt('${_userEmail}_calorieGoal', _calorieGoal);
+    await _prefs?.setInt('${_userEmail}_waterGoal', _waterGoal);
+    await _prefs?.setInt('${_userEmail}_stepGoal', _stepGoal);
+
+    await syncDataToCloud();
     notifyListeners();
   }
+
+  int _calculateBmrCalories() {
+    double bmr = (10 * _weight) + (6.25 * _height) - (5 * _age) + (_gender == "Female" ? -161 : 5);
+    double mult = 1.2;
+    switch (_activityLevel) {
+      case 'Lightly Active':
+        mult = 1.375;
+        break;
+      case 'Moderately Active':
+        mult = 1.55;
+        break;
+      case 'Very Active':
+        mult = 1.725;
+        break;
+      case 'Athlete':
+        mult = 1.9;
+        break;
+    }
+    double maintenance = bmr * mult;
+
+    if (_fitnessGoal.contains("Lose")) return (maintenance - 500).round();
+    if (_fitnessGoal.contains("Gain") || _fitnessGoal.contains("Muscle")) return (maintenance + 400).round();
+    return maintenance.round();
+  }
+
 
   void completeOnboarding() {
     _hasCompletedOnboarding = true;
@@ -663,18 +1110,28 @@ class FitnessProvider extends ChangeNotifier {
   }
 
   void _onStepCount(StepCount event) {
-    if (_initialSteps == -1) {
-      _initialSteps = event.steps - _todaySteps;
-      if (_initialSteps < 0) _initialSteps = 0; // fallback
+    int lastKnown = _prefs?.getInt('${_userEmail}_lastKnownHardwareSteps') ?? -1;
+    
+    if (lastKnown != -1) {
+      if (event.steps >= lastKnown) {
+        int newSteps = event.steps - lastKnown;
+        if (newSteps > 0) {
+          _todaySteps += newSteps;
+          _userXp += newSteps;
+        }
+      } else {
+        // Device rebooted, pedometer reset
+        int newSteps = event.steps;
+        _todaySteps += newSteps;
+        _userXp += newSteps;
+      }
     }
-    int newSteps = event.steps - _initialSteps;
-    if (newSteps > _todaySteps) {
-      _userXp += (newSteps - _todaySteps); // 1 XP per step
-      _prefs?.setInt('${_userEmail}_userXp', _userXp);
-    }
-    _todaySteps = newSteps;
+    
+    _prefs?.setInt('${_userEmail}_lastKnownHardwareSteps', event.steps);
     _prefs?.setInt('todaySteps', _todaySteps);
     _prefs?.setInt('${_userEmail}_todaySteps', _todaySteps);
+    _prefs?.setInt('${_userEmail}_userXp', _userXp);
+    
     _updateStepNotification();
     notifyListeners();
   }

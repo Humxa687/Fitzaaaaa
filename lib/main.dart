@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/fitness_provider.dart';
 import 'core/theme.dart';
-import 'features/auth/login_screen.dart';
+import 'features/auth/auth_screen.dart';
 import 'features/auth/onboarding_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/dashboard/body_building_dashboard_screen.dart';
@@ -32,7 +32,10 @@ class FitzaApp extends StatelessWidget {
       builder: (context, provider, child) {
         return MaterialApp(
           title: 'Fitza - AI Fitness',
-          theme: FitzaTheme.getTheme(provider.currentTheme),
+          theme: FitzaTheme.lightTheme,
+          darkTheme: FitzaTheme.darkTheme,
+          themeMode: provider.currentTheme == AppThemeMode.dark ? ThemeMode.dark : ThemeMode.light,
+
           home: const AuthenticationWrapper(),
           debugShowCheckedModeBanner: false,
         );
@@ -55,7 +58,7 @@ class AuthenticationWrapper extends StatelessWidget {
         return const OnboardingScreen();
       }
     } else {
-      return const LoginScreen();
+      return const AuthScreen();
     }
   }
 }

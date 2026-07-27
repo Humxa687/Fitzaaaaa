@@ -29,6 +29,24 @@ class MainActivity: FlutterActivity() {
                     dispatchMediaKeyEvent(audioManager, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
                     result.success(null)
                 }
+                "stop" -> {
+                    dispatchMediaKeyEvent(audioManager, KeyEvent.KEYCODE_MEDIA_STOP)
+                    result.success(null)
+                }
+                "is_music_active" -> {
+                    result.success(audioManager.isMusicActive)
+                }
+                "get_extracted_media_info" -> {
+                    val isMusicActive = audioManager.isMusicActive
+                    val mediaInfo = mapOf(
+                        "is_active" to isMusicActive,
+                        "source" to if (isMusicActive) "Background Media Player (Spotify / Apple Music / YouTube)" else "None"
+                    )
+                    result.success(mediaInfo)
+                }
+
+
+
                 else -> {
                     result.notImplemented()
                 }

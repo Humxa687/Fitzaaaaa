@@ -3,7 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/soft_card.dart';
 import '../profile/profile_screen.dart';
+import '../workouts/workout_models.dart';
+import '../workouts/workout_repository.dart';
+import '../workouts/workout_category_screen.dart';
+import '../workouts/exercise_library_screen.dart';
+import '../workouts/workout_player_screen.dart';
+import '../workouts/custom_workout_builder_dialog.dart';
 
 class BodyBuildingDashboardScreen extends StatefulWidget {
   const BodyBuildingDashboardScreen({super.key});
@@ -17,21 +24,83 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
   Widget build(BuildContext context) {
     final provider = Provider.of<FitnessProvider>(context);
     final theme = Theme.of(context);
+    final categories = WorkoutRepository.getAllCategories();
+    final personalizedWorkout = WorkoutRepository.generatePersonalizedWorkout(provider);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Mode Toggle
+              // Clean Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today",
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Hi, ${provider.userName}",
+                          style: theme.textTheme.displayMedium?.copyWith(
+                            color: isDark ? Colors.white : Colors.black,
+                            letterSpacing: -0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          provider.currentTheme == AppThemeMode.light ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        onPressed: () {
+                          provider.setTheme(
+                            provider.currentTheme == AppThemeMode.light ? AppThemeMode.dark : AppThemeMode.light,
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: FitzaTheme.primaryDark.withValues(alpha: 0.1),
+                          child: Text(
+                            provider.userName.isNotEmpty ? provider.userName[0].toUpperCase() : "A",
+                            style: theme.textTheme.titleLarge?.copyWith(color: FitzaTheme.primaryDark),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ).animate().fade().slideY(begin: -0.1),
+
+              const SizedBox(height: 32),
+
+              // Soft Segmented Control for Goal
               Container(
-                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Row(
                   children: [
@@ -48,14 +117,15 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          color: Colors.transparent,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
                           child: Center(
                             child: Text(
-                              "WEIGHT LOSS",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6), 
-                                fontWeight: FontWeight.bold, 
-                                fontSize: 12
+                              "Weight Loss",
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: isDark ? Colors.white54 : Colors.black54,
                               ),
                             ),
                           ),
@@ -63,187 +133,239 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                       ),
                     ),
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          // Already on Body Building
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              "BODY BUILDING",
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(100),
+                          boxShadow: [
+                            if (!isDark)
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              )
+                          ],
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Hi, ${provider.userName} 💪",
-                          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          "Let's build some muscle today",
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.brightness_6_outlined),
-                        onPressed: () {
-                          _showThemeBottomSheet(context, provider);
-                        },
-                      ),
-                      InkWell(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-                        },
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
+                        child: Center(
                           child: Text(
-                            provider.userName.isNotEmpty ? provider.userName[0].toUpperCase() : "A",
-                            style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                            "Body Building",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ).animate().fade().slideY(begin: -0.2, end: 0, duration: 500.ms),
-              
-              const SizedBox(height: 24),
-              
-              // Muscle Group Target
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFE53935), Color(0xFFB71C1C)], // Red gradient
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
+              ).animate().fade(delay: 100.ms),
+
+              const SizedBox(height: 32),
+
+              // Clean Hero Workout Card
+              SoftCard(
+                padding: const EdgeInsets.all(28),
+                borderRadius: 32,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Today's Target", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 8),
-                    const Text("Chest & Triceps", style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildTargetStat("Exercises", "6"),
-                        _buildTargetStat("Total Sets", "18"),
-                        _buildTargetStat("Intensity", "High"),
+                        Text("DAILY PLAN", style: theme.textTheme.labelLarge?.copyWith(
+                          color: FitzaTheme.primaryDark,
+                          letterSpacing: 1,
+                          fontWeight: FontWeight.w700,
+                        )),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: FitzaTheme.primaryDark.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text("CORE", style: theme.textTheme.labelSmall?.copyWith(
+                            color: FitzaTheme.primaryDark,
+                            fontWeight: FontWeight.w700,
+                          )),
+                        ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      personalizedWorkout.title,
+                      style: theme.textTheme.headlineLarge?.copyWith(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildHeroStat(theme, "${personalizedWorkout.exercises.length}", "Exercises"),
+                        _buildHeroStat(theme, "${personalizedWorkout.exercises.fold<int>(0, (sum, e) => sum + e.durationMinutes)} min", "Duration"),
+                        _buildHeroStat(theme, personalizedWorkout.level, "Intensity"),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: FitzaTheme.primaryDark,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkoutPlayerScreen(
+                                exercises: personalizedWorkout.exercises,
+                                workoutTitle: personalizedWorkout.title,
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text("Start Workout"),
+                      ),
                     ),
                   ],
                 ),
-              ).animate().scale(delay: 200.ms, duration: 500.ms, curve: Curves.easeOutBack),
-              
+              ).animate().fade(delay: 200.ms).slideY(begin: 0.05),
+
               const SizedBox(height: 24),
-              
-              // Nutrition Focus (Protein heavily featured)
+
+              // Activity Rings / Metrics Grid
               Row(
                 children: [
                   Expanded(
-                    child: Card(
-                      color: theme.colorScheme.surface,
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.lunch_dining, color: Colors.orange),
-                            const SizedBox(height: 8),
-                            const Text("Protein", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("120g / 160g", style: TextStyle(color: theme.colorScheme.primary)),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: 120 / 160,
-                              backgroundColor: Colors.orange.withValues(alpha: 0.2),
-                              color: Colors.orange,
+                    child: SoftCard(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: FitzaTheme.energyOrange.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
-                          ],
-                        ),
+                            child: const Icon(Icons.local_fire_department_rounded, color: FitzaTheme.energyOrange, size: 28),
+                          ),
+                          const SizedBox(height: 16),
+                          Text("${provider.caloriesBurned}", style: theme.textTheme.headlineMedium?.copyWith(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+                          Text("Calories", style: theme.textTheme.labelMedium?.copyWith(color: isDark ? Colors.white54 : Colors.black54)),
+                        ],
                       ),
-                    ),
+                    ).animate().fade(delay: 300.ms),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Card(
-                      color: theme.colorScheme.surface,
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.local_fire_department, color: Colors.red),
-                            const SizedBox(height: 8),
-                            const Text("Calories", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("2100 / ${provider.calorieGoal}", style: TextStyle(color: theme.colorScheme.primary)),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: 2100 / provider.calorieGoal,
-                              backgroundColor: Colors.red.withValues(alpha: 0.2),
-                              color: Colors.red,
+                    child: SoftCard(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: FitzaTheme.accentNeon.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
-                          ],
-                        ),
+                            child: const Icon(Icons.timer_rounded, color: FitzaTheme.accentNeon, size: 28),
+                          ),
+                          const SizedBox(height: 16),
+                          Text("${provider.activeMinutes}", style: theme.textTheme.headlineMedium?.copyWith(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+                          Text("Minutes", style: theme.textTheme.labelMedium?.copyWith(color: isDark ? Colors.white54 : Colors.black54)),
+                        ],
                       ),
-                    ),
+                    ).animate().fade(delay: 400.ms),
                   ),
                 ],
-              ).animate().fade(delay: 400.ms).slideX(begin: 0.2, end: 0, duration: 400.ms),
+              ),
               
-              const SizedBox(height: 24),
-              
-              const Text("Your Workouts", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              
-              _buildWorkoutTile(theme, "Bench Press", "4 Sets x 8-10 Reps", Icons.fitness_center),
-              _buildWorkoutTile(theme, "Incline Dumbbell Press", "3 Sets x 10-12 Reps", Icons.fitness_center),
-              _buildWorkoutTile(theme, "Tricep Pushdowns", "3 Sets x 12-15 Reps", Icons.fitness_center),
-              _buildWorkoutTile(theme, "Overhead Tricep Extension", "3 Sets x 12 Reps", Icons.fitness_center),
-              
+              const SizedBox(height: 40),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Explore Workouts", style: theme.textTheme.titleLarge),
+                  IconButton(
+                    icon: Icon(Icons.add_rounded, color: FitzaTheme.primaryDark, size: 28),
+                    onPressed: () {
+                      CustomWorkoutBuilderDialog.show(context);
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Soft Grid of Categories
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final cat = categories[index];
+                  return GestureDetector(
+                    onTap: () {
+                      if (cat.id == "cat_library") {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ExerciseLibraryScreen()));
+                      } else {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => WorkoutCategoryScreen(category: cat)));
+                      }
+                    },
+                    child: SoftCard(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: cat.gradientColors.first.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(cat.icon, color: cat.gradientColors.first, size: 28),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                cat.title,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                cat.level,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: isDark ? Colors.white54 : Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fade(duration: 400.ms, delay: (index * 50).ms).slideY(begin: 0.05);
+                },
+              ),
+
+              const SizedBox(height: 60),
             ],
           ),
         ),
@@ -251,71 +373,24 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
     );
   }
 
-  Widget _buildTargetStat(String label, String value) {
+  Widget _buildHeroStat(ThemeData theme, String value, String label) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget _buildWorkoutTile(ThemeData theme, String title, String subtitle, IconData icon) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.redAccent.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+        Text(
+          value,
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
           ),
-          child: Icon(icon, color: Colors.redAccent),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          // Open detailed workout timer
-        },
-      ),
-    );
-  }
-
-  void _showThemeBottomSheet(BuildContext context, FitnessProvider provider) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("App Theme", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12.0,
-                runSpacing: 12.0,
-                children: AppThemeMode.values.map((mode) {
-                  final isSelected = provider.currentTheme == mode;
-                  return ChoiceChip(
-                    label: Text(mode.name.toUpperCase()),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        provider.setTheme(mode);
-                        Navigator.pop(context);
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.brightness == Brightness.dark ? Colors.white54 : Colors.black54,
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

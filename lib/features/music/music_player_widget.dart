@@ -67,21 +67,33 @@ class MusicPlayerWidget extends StatelessWidget {
                 Row(
                   children: [
                     // Track cover / Art
-
-                      Container(
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
                           gradient: FitzaTheme.orangeGradient,
                         ),
-                        child: const Icon(
-                          Icons.music_note,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                        child: provider.trackCoverUrl != null && provider.trackCoverUrl!.isNotEmpty
+                            ? Image.network(
+                                provider.trackCoverUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.music_note,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.music_note,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                       ),
+                    ),
                     const SizedBox(width: 12),
+
                     // Track Name & Artist
                     Expanded(
                       child: Column(

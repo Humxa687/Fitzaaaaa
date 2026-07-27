@@ -34,7 +34,10 @@ class SettingsScreen extends StatelessWidget {
                     children: AppThemeMode.values.map((mode) {
                       final isSelected = provider.currentTheme == mode;
                       return ChoiceChip(
-                        label: Text(mode.name.toUpperCase()),
+                        label: Text(
+                          mode == AppThemeMode.light ? "☀️ SUN MODE" : "🌙 MOON MODE",
+                        ),
+
                         selected: isSelected,
                         onSelected: (selected) {
                           if (selected) {

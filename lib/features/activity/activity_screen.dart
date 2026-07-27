@@ -6,6 +6,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'walking_avatar_widget.dart';
+
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -83,31 +85,64 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ),
             const SizedBox(height: 24),
             
-            // Steps Circle
+            // Animated Walking Avatar & Steps Circle
             Container(
-              width: 140,
-              height: 140,
+              width: 170,
+              height: 170,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.2), width: 8),
+                color: theme.colorScheme.surface,
+                border: Border.all(
+                  color: provider.isTrackingActivity ? FitzaTheme.energyOrange : theme.colorScheme.primary.withValues(alpha: 0.3),
+                  width: 6,
+                ),
+                boxShadow: [
+                  if (provider.isTrackingActivity)
+                    BoxShadow(
+                      color: FitzaTheme.energyOrange.withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    )
+                ],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.directions_run, color: FitzaTheme.energyOrange),
-                  const SizedBox(height: 8),
-                  Text(
-                    "${provider.todaySteps}", // In a real app this might be steps for *this* session
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  WalkingAvatarWidget(
+                    isWalking: provider.isTrackingActivity,
+                    size: 130,
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "${provider.todaySteps} steps",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
-              "Goal: ${provider.stepGoal} steps",
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              provider.isTrackingActivity ? "🚶 Walking Active..." : "Goal: ${provider.stepGoal} steps",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: provider.isTrackingActivity ? FitzaTheme.energyOrange : Colors.grey,
+              ),
             ),
+
             const SizedBox(height: 32),
             
             // Distance & Pace Row

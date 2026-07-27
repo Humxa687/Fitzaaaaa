@@ -7,6 +7,8 @@ import '../../core/theme.dart';
 import '../profile/profile_screen.dart';
 import '../activity/activity_screen.dart';
 import '../gamification/achievements_screen.dart';
+import '../music/extracted_media_placeholder.dart';
+
 
 import 'dart:math' as math;
 import 'package:confetti/confetti.dart';
@@ -235,7 +237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Hello, ${provider.userName}!",
+                          "Welcome back, ${provider.userName} 👋",
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -243,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          "Your health dashboard for today",
+                          "Your AI health dashboard for today",
                           style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -254,11 +256,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.brightness_6_outlined),
+                            icon: Icon(
+                              provider.currentTheme == AppThemeMode.light 
+                                  ? Icons.light_mode 
+                                  : Icons.dark_mode,
+                              color: provider.currentTheme == AppThemeMode.light ? Colors.orange : Colors.amber.shade200,
+                            ),
+                            tooltip: provider.currentTheme == AppThemeMode.light ? "Sun Mode" : "Moon Mode",
                             onPressed: () {
-                              _showThemeBottomSheet(context, provider);
+                              provider.setTheme(
+                                provider.currentTheme == AppThemeMode.light 
+                                    ? AppThemeMode.dark 
+                                    : AppThemeMode.light,
+                              );
                             },
                           ),
+
                           IconButton(
                             icon: const Icon(Icons.settings_outlined),
                             onPressed: () {
@@ -271,10 +284,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
                             },
                             child: CircleAvatar(
-                              radius: 20,
+                              radius: 22,
                               backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.2),
                               backgroundImage: provider.profileImagePath != null
-                                  ? FileImage(File(provider.profileImagePath!))
+                                  ? (provider.profileImagePath!.startsWith('http')
+                                      ? NetworkImage(provider.profileImagePath!) as ImageProvider
+                                      : FileImage(File(provider.profileImagePath!)))
                                   : null,
                               child: provider.profileImagePath == null
                                   ? Text(
@@ -290,8 +305,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ],
                       ),
+
                 ],
-              ).animate().fade(duration: 500.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOut),
+              ),
               const SizedBox(height: 24),
 
               // Gamification Banner
@@ -425,22 +441,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  InkWell(
-                                    onTap: () => provider.removeStepGoal(500),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                                      child: const Icon(Icons.remove, color: Colors.white, size: 20),
+                                  ElevatedButton(
+                                    onPressed: () => provider.removeStepGoal(500),
+                                    style: ElevatedButton.styleFrom(
+                                      shape: const CircleBorder(),
+                                      padding: const EdgeInsets.all(20),
+                                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
                                     ),
+                                    child: const Icon(Icons.remove, size: 28),
                                   ),
-                                  const SizedBox(width: 16),
-                                  InkWell(
-                                    onTap: () => provider.addStepGoal(500),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                                      child: const Icon(Icons.add, color: Colors.white, size: 20),
+                                  const SizedBox(width: 24),
+                                  ElevatedButton(
+                                    onPressed: () => provider.addStepGoal(500),
+                                    style: ElevatedButton.styleFrom(
+                                      shape: const CircleBorder(),
+                                      padding: const EdgeInsets.all(20),
+                                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
                                     ),
+                                    child: const Icon(Icons.add, size: 28),
                                   ),
                                 ],
                               ),
@@ -538,9 +560,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ).animate().fade(duration: 600.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.easeOut),
               
-
+              // Background Extracted Media Card & Placeholder
+              const ExtractedMediaPlaceholderWidget(),
 
               // Active Workout Tracker Simulation Panel
+
               Card(
                 color: theme.colorScheme.primary.withValues(alpha: 0.06),
                 child: Padding(
@@ -727,41 +751,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showThemeBottomSheet(BuildContext context, FitnessProvider provider) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("App Theme", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12.0,
-                runSpacing: 12.0,
-                children: AppThemeMode.values.map((mode) {
-                  final isSelected = provider.currentTheme == mode;
-                  return ChoiceChip(
-                    label: Text(mode.name.toUpperCase()),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        provider.setTheme(mode);
-                        Navigator.pop(context);
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+
 
   void _showApiKeyDialog(BuildContext context, FitnessProvider provider) {
     final TextEditingController controller = TextEditingController(text: provider.geminiApiKey ?? "");

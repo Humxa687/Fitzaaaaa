@@ -10,7 +10,7 @@ class MusicFullScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<FitnessProvider>(context);
     final theme = Theme.of(context);
-    final iconData = provider.trackIcon;
+    final coverUrl = provider.trackCoverUrl;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -26,10 +26,11 @@ class MusicFullScreen extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Blurred background
-          if (iconData != null)
-            Image.memory(
-              iconData,
+          if (coverUrl != null && coverUrl.isNotEmpty)
+            Image.network(
+              coverUrl,
               fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: theme.colorScheme.surface),
             )
           else
             Container(color: theme.colorScheme.surface),
@@ -61,16 +62,21 @@ class MusicFullScreen extends StatelessWidget {
                           offset: const Offset(0, 15),
                         )
                       ],
-                      image: iconData != null
-                          ? DecorationImage(
-                              image: MemoryImage(iconData),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
                     ),
-                    child: iconData == null 
-                        ? const Icon(Icons.music_note, size: 80, color: Colors.white24)
-                        : null,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: coverUrl != null && coverUrl.isNotEmpty
+                          ? Image.network(
+                              coverUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Icon(Icons.music_note, size: 80, color: Colors.white24),
+                              ),
+                            )
+                          : const Center(
+                              child: Icon(Icons.music_note, size: 80, color: Colors.white24),
+                            ),
+                    ),
                   ),
                   
                   const SizedBox(height: 60),
@@ -118,7 +124,11 @@ class MusicFullScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.play_arrow, color: Colors.black, size: 48),
+                          icon: Icon(
+                            provider.isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.black,
+                            size: 48,
+                          ),
                           onPressed: () {
                             provider.playPauseMusic();
                           },

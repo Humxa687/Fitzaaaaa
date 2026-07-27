@@ -39,6 +39,15 @@ dependencies:
   country_picker: ^2.0.28
   audioplayers: ^6.8.1
   audio_session: ^0.2.4
+  youtube_explode_dart: ^2.2.2
+  file_picker: ^8.1.0
+  http: ^1.2.1
+  flutter_3d_controller: ^1.2.2
+
+dependency_overrides:
+  flutter_plugin_android_lifecycle: "2.0.20"
+  android_intent_plus: ^6.1.0
+  jni: 1.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -55,3 +64,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/models/

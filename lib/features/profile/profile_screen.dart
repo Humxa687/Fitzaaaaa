@@ -3,10 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
 import '../auth/login_screen.dart';
+import '../auth/phone_verification_modal.dart';
 import 'settings_screen.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool _isEditing = false;
   bool _notificationsEnabled = true;
+  bool _isSigningOut = false;
 
   @override
   void initState() {
@@ -123,12 +127,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             radius: 50,
                             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                             backgroundImage: provider.profileImagePath != null
-                                ? FileImage(File(provider.profileImagePath!))
+                                ? (provider.profileImagePath!.startsWith('http')
+                                    ? NetworkImage(provider.profileImagePath!) as ImageProvider
+                                    : FileImage(File(provider.profileImagePath!)))
                                 : null,
                             child: provider.profileImagePath == null
-                                ? Icon(Icons.person, size: 50, color: theme.colorScheme.primary)
+                                ? Text(
+                                    provider.userName.isNotEmpty ? provider.userName[0].toUpperCase() : "U",
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 32,
+                                    ),
+                                  )
                                 : null,
                           ),
+
                           Container(
                             decoration: BoxDecoration(
                               color: theme.colorScheme.primary,
@@ -149,9 +163,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       provider.userEmail,
                       style: const TextStyle(color: Colors.grey),
                     ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade400, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.cloud_done_rounded, size: 14, color: Colors.blue),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Cloud Synced & Restored",
+                            style: TextStyle(color: Colors.blue.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Phone OTP Verification Status Card
+                    InkWell(
+                      onTap: () => PhoneVerificationModal.show(context),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: provider.isPhoneVerified
+                              ? Colors.green.withValues(alpha: 0.15)
+                              : theme.colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: provider.isPhoneVerified
+                                ? Colors.green.shade600
+                                : theme.colorScheme.primary.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              provider.isPhoneVerified ? Icons.verified_user_rounded : Icons.phone_android_rounded,
+                              color: provider.isPhoneVerified ? Colors.green.shade700 : theme.colorScheme.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              provider.isPhoneVerified
+                                  ? "Verified: ${provider.verifiedPhoneNumber ?? ''}"
+                                  : "Verify Mobile Phone via OTP",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: provider.isPhoneVerified ? Colors.green.shade800 : theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 32),
 
               // Inputs / Static Fields
@@ -161,7 +238,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Personal Info", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Personal Info", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: FitzaTheme.energyOrange.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "${provider.heightUnit} / ${provider.weightUnit}",
+                              style: const TextStyle(color: FitzaTheme.energyOrange, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 16),
                       _buildTextField("Full Name", _nameController, _isEditing, TextInputType.name),
                       const SizedBox(height: 12),
@@ -169,16 +262,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Expanded(child: _buildTextField("Age", _ageController, _isEditing, TextInputType.number)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildTextField("Height (cm)", _heightController, _isEditing, TextInputType.number)),
+                          Expanded(child: _buildTextField("Height (${provider.heightUnit})", _heightController, _isEditing, TextInputType.number)),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _buildTextField("Weight (kg)", _weightController, _isEditing, TextInputType.number),
+                      Row(
+                        children: [
+                          Expanded(child: _buildTextField("Weight (${provider.weightUnit})", _weightController, _isEditing, TextInputType.number)),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text("Gender", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                const SizedBox(height: 4),
+                                Text(provider.gender, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Smart Calculations
+              Card(
+                color: FitzaTheme.energyOrange.withOpacity(0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Smart Calculations", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: FitzaTheme.energyOrange)),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildCalcStat("BMI", provider.bmi.toStringAsFixed(1)),
+                          _buildCalcStat("TDEE (kcal)", provider.tdee.round().toString()),
+                          _buildCalcStat("Water (ml)", "${provider.calculatedWaterGoal * 250}"),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
 
               // Targets Card
               Card(
@@ -314,18 +447,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 24),
 
               // Sign Out Button
-              ElevatedButton(
-                onPressed: () => provider.logout(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade50,
-                  foregroundColor: Colors.red,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: _isSigningOut ? 50 : MediaQuery.of(context).size.width,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isSigningOut ? null : () async {
+                    setState(() => _isSigningOut = true);
+                    await Future.delayed(800.ms);
+                    provider.logout();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade50,
+                    foregroundColor: Colors.red,
+                    elevation: 0,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(_isSigningOut ? 25 : 16),
+                    ),
                   ),
+                  child: _isSigningOut
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.red),
+                        )
+                      : const Text("Sign Out", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                child: const Text("Sign Out", style: TextStyle(fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 80),
             ],
@@ -345,6 +493,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         disabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
         contentPadding: const EdgeInsets.symmetric(vertical: 8),
       ),
+    );
+  }
+
+  Widget _buildCalcStat(String label, String value) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      ],
     );
   }
 }
