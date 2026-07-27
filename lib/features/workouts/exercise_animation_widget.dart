@@ -7,12 +7,14 @@ class ExerciseAnimationWidget extends StatefulWidget {
   final ExerciseAnimationType animationType;
   final double height;
   final String exerciseName;
+  final bool autoPlay;
 
   const ExerciseAnimationWidget({
     super.key,
     required this.animationType,
     this.height = 220,
     this.exerciseName = "",
+    this.autoPlay = false,
   });
 
   @override
@@ -21,6 +23,18 @@ class ExerciseAnimationWidget extends StatefulWidget {
 
 class _ExerciseAnimationWidgetState extends State<ExerciseAnimationWidget> {
   Flutter3DController controller = Flutter3DController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoPlay) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          controller.playAnimation();
+        }
+      });
+    }
+  }
 
   String _getModelPath() {
     switch (widget.animationType) {

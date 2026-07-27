@@ -11,6 +11,7 @@ import '../workouts/workout_category_screen.dart';
 import '../workouts/exercise_library_screen.dart';
 import '../workouts/workout_player_screen.dart';
 import '../workouts/custom_workout_builder_dialog.dart';
+import '../workouts/exercise_animation_widget.dart';
 
 class BodyBuildingDashboardScreen extends StatefulWidget {
   const BodyBuildingDashboardScreen({super.key});
@@ -197,6 +198,18 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                       personalizedWorkout.title,
                       style: theme.textTheme.headlineLarge?.copyWith(
                         color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Embedded Autoplaying 3D Trainer Model
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: ExerciseAnimationWidget(
+                        animationType: personalizedWorkout.exercises.isNotEmpty 
+                          ? personalizedWorkout.exercises.first.animationType 
+                          : ExerciseAnimationType.pushup, 
+                        height: 200,
+                        autoPlay: true,
                       ),
                     ),
                     const SizedBox(height: 24),
