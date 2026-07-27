@@ -200,18 +200,6 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                         color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    // Embedded Autoplaying 3D Trainer Model
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: ExerciseAnimationWidget(
-                        animationType: personalizedWorkout.exercises.isNotEmpty 
-                          ? personalizedWorkout.exercises.first.animationType 
-                          : ExerciseAnimationType.pushup, 
-                        height: 200,
-                        autoPlay: true,
-                      ),
-                    ),
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -405,6 +393,40 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
           ),
         ),
       ],
+    );
+  }
+  Widget _buildQuickExerciseCard(BuildContext context, String title, String modelPath, String muscle, ExerciseModel exercise) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ExerciseDetailScreen(exercise: exercise)));
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: FitzaTheme.primaryDark.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.fitness_center_rounded, color: FitzaTheme.primaryDark, size: 24),
+            ),
+            const SizedBox(height: 12),
+            Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(muscle, style: theme.textTheme.labelMedium?.copyWith(color: FitzaTheme.primaryDark)),
+          ],
+        ),
+      ),
     );
   }
 }
