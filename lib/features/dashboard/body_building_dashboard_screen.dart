@@ -53,8 +53,9 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                         const SizedBox(height: 4),
                         Text(
                           "Hi, ${provider.userName}",
-                          style: theme.textTheme.displayMedium?.copyWith(
+                          style: theme.textTheme.headlineMedium?.copyWith(
                             color: isDark ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.bold,
                             letterSpacing: -0.5,
                           ),
                           maxLines: 1,
