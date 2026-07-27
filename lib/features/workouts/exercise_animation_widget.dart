@@ -142,6 +142,7 @@ class _ExerciseAnimationWidgetState extends State<ExerciseAnimationWidget> {
           )
         ],
       ),
+      ),
     );
   }
 }

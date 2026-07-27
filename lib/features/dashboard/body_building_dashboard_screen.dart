@@ -12,6 +12,7 @@ import '../workouts/exercise_library_screen.dart';
 import '../workouts/workout_player_screen.dart';
 import '../workouts/custom_workout_builder_dialog.dart';
 import '../workouts/exercise_animation_widget.dart';
+import '../workouts/exercise_detail_screen.dart';
 
 class BodyBuildingDashboardScreen extends StatefulWidget {
   const BodyBuildingDashboardScreen({super.key});
