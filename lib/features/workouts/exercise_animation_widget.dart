@@ -75,24 +75,23 @@ class _ExerciseAnimationWidgetState extends State<ExerciseAnimationWidget> {
           )
         ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background grid lines
-          CustomPaint(
-            size: Size(double.infinity, widget.height),
-            painter: GridBackgroundPainter(),
-          ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background stage
+            CustomPaint(
+              size: Size(double.infinity, widget.height),
+              painter: StageBackgroundPainter(),
+            ),
 
-          // 3D Model Viewer
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Flutter3DViewer(
+            // 3D Model Viewer
+            Flutter3DViewer(
               controller: controller,
               src: _getModelPath(),
               progressBarColor: FitzaTheme.energyOrange,
             ),
-          ),
 
           // Live Animation Badge
           Positioned(
@@ -147,19 +146,21 @@ class _ExerciseAnimationWidgetState extends State<ExerciseAnimationWidget> {
   }
 }
 
-class GridBackgroundPainter extends CustomPainter {
+class StageBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.04)
-      ..strokeWidth = 1;
+    // Solid dark blue background matching the reference
+    final bgPaint = Paint()..color = const Color(0xFF1B2A7A);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
-    for (double i = 0; i < size.width; i += 20) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += 20) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
-    }
+    // Floor oval matching the reference
+    final floorPaint = Paint()..color = const Color(0xFF334BBD);
+    final ovalRect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height * 0.9), // Positioned near bottom
+      width: size.width * 1.2,
+      height: size.height * 0.7, // Flat oval
+    );
+    canvas.drawOval(ovalRect, floorPaint);
   }
 
   @override
