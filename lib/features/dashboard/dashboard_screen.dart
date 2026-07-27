@@ -4,11 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/soft_card.dart';
 import '../profile/profile_screen.dart';
 import '../activity/activity_screen.dart';
 import '../gamification/achievements_screen.dart';
 import '../music/extracted_media_placeholder.dart';
-
 
 import 'dart:math' as math;
 import 'package:confetti/confetti.dart';
@@ -75,15 +75,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 content: Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    gradient: FitzaTheme.orangeGradient,
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.orange.withValues(alpha: 0.4),
-                        blurRadius: 40,
-                        offset: const Offset(0, 15),
-                      )
-                    ],
+                    color: FitzaTheme.energyOrange,
+                    borderRadius: BorderRadius.circular(32),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -112,11 +105,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: Colors.orange,
+                          foregroundColor: FitzaTheme.energyOrange,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                          elevation: 0,
                         ),
                         child: const Text("Awesome!", style: TextStyle(fontWeight: FontWeight.bold)),
                       )
@@ -153,45 +147,122 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final provider = Provider.of<FitnessProvider>(context);
 
     double stepProgress = provider.todaySteps / provider.stepGoal;
     if (stepProgress > 1.0) stepProgress = 1.0;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Mode Toggle
+              // Clean Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today",
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Hi, ${provider.userName}",
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: isDark ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          provider.currentTheme == AppThemeMode.light ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        onPressed: () {
+                          provider.setTheme(
+                            provider.currentTheme == AppThemeMode.light ? AppThemeMode.dark : AppThemeMode.light,
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.settings_outlined, color: isDark ? Colors.white : Colors.black),
+                        onPressed: () {
+                          _showApiKeyDialog(context, provider);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: FitzaTheme.primaryDark.withValues(alpha: 0.1),
+                          backgroundImage: provider.profileImagePath != null
+                              ? (provider.profileImagePath!.startsWith('http')
+                                  ? NetworkImage(provider.profileImagePath!) as ImageProvider
+                                  : FileImage(File(provider.profileImagePath!)))
+                              : null,
+                          child: provider.profileImagePath == null
+                              ? Text(
+                                  provider.userName.isNotEmpty ? provider.userName[0].toUpperCase() : "A",
+                                  style: theme.textTheme.titleLarge?.copyWith(color: FitzaTheme.primaryDark),
+                                )
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ).animate().fade().slideY(begin: -0.1),
+
+              const SizedBox(height: 32),
+
+              // Soft Segmented Control for Goal
               Container(
-                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          // Already on Weight Loss mode
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              "WEIGHT LOSS",
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(100),
+                          boxShadow: [
+                            if (!isDark)
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              )
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            "Weight Loss",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
                         ),
@@ -210,14 +281,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          color: Colors.transparent,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
                           child: Center(
                             child: Text(
-                              "BODY BUILDING",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6), 
-                                fontWeight: FontWeight.bold, 
-                                fontSize: 12
+                              "Body Building",
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: isDark ? Colors.white54 : Colors.black54,
                               ),
                             ),
                           ),
@@ -226,135 +298,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
-              ),
+              ).animate().fade(delay: 100.ms),
 
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Welcome back, ${provider.userName} 👋",
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          "Your AI health dashboard for today",
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              provider.currentTheme == AppThemeMode.light 
-                                  ? Icons.light_mode 
-                                  : Icons.dark_mode,
-                              color: provider.currentTheme == AppThemeMode.light ? Colors.orange : Colors.amber.shade200,
-                            ),
-                            tooltip: provider.currentTheme == AppThemeMode.light ? "Sun Mode" : "Moon Mode",
-                            onPressed: () {
-                              provider.setTheme(
-                                provider.currentTheme == AppThemeMode.light 
-                                    ? AppThemeMode.dark 
-                                    : AppThemeMode.light,
-                              );
-                            },
-                          ),
+              const SizedBox(height: 32),
 
-                          IconButton(
-                            icon: const Icon(Icons.settings_outlined),
-                            onPressed: () {
-                              _showApiKeyDialog(context, provider);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-                            },
-                            child: CircleAvatar(
-                              radius: 22,
-                              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-                              backgroundImage: provider.profileImagePath != null
-                                  ? (provider.profileImagePath!.startsWith('http')
-                                      ? NetworkImage(provider.profileImagePath!) as ImageProvider
-                                      : FileImage(File(provider.profileImagePath!)))
-                                  : null,
-                              child: provider.profileImagePath == null
-                                  ? Text(
-                                      provider.userName.isNotEmpty ? provider.userName[0].toUpperCase() : "A",
-                                      style: TextStyle(
-                                        color: theme.colorScheme.primary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Gamification Banner
+              // Gamification Banner (Clean)
               InkWell(
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AchievementsScreen()));
                 },
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFA726), Color(0xFFFF7043)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: Colors.orange.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 5))
-                    ],
+                    color: FitzaTheme.energyOrange,
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.local_fire_department, color: Colors.white, size: 36),
-                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 32),
+                      ),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("${provider.currentStreak} Day Streak!", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                            Text("${provider.currentStreak} Day Streak", style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
-                            Text("Lvl ${provider.userLevel} ${provider.levelTitle}", style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                            Text("Lvl ${provider.userLevel} ${provider.levelTitle}", style: theme.textTheme.labelMedium?.copyWith(color: Colors.white70)),
                           ],
                         ),
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text("${provider.userXp} XP", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                          const SizedBox(height: 4),
+                          Text("${provider.userXp} XP", style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
                           SizedBox(
                             width: 60,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
                                 value: (provider.userXp % 1000) / 1000.0,
-                                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                backgroundColor: Colors.white.withValues(alpha: 0.3),
                                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                                 minHeight: 6,
                               ),
@@ -367,143 +359,128 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ).animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOut),
               
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
               // Circular Step Goal Tracker & Live Step Counter
               Center(
                 child: InkWell(
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityScreen()));
                   },
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(32),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Today's Step Progress",
-                        style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 16),
-                      TweenAnimationBuilder<int>(
-                        tween: IntTween(begin: 0, end: provider.todaySteps),
-                        duration: const Duration(seconds: 2),
-                        curve: Curves.easeOutExpo,
-                        builder: (context, animatedSteps, child) {
-                          double animatedProgress = provider.stepGoal > 0 ? animatedSteps / provider.stepGoal : 0;
-                          if (animatedProgress > 1.0) animatedProgress = 1.0;
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: FitzaTheme.primaryDark,
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Today's Step Progress",
+                          style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 24),
+                        TweenAnimationBuilder<int>(
+                          tween: IntTween(begin: 0, end: provider.todaySteps),
+                          duration: const Duration(seconds: 2),
+                          curve: Curves.easeOutExpo,
+                          builder: (context, animatedSteps, child) {
+                            double animatedProgress = provider.stepGoal > 0 ? animatedSteps / provider.stepGoal : 0;
+                            if (animatedProgress > 1.0) animatedProgress = 1.0;
 
-                          return Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 240,
-                                height: 240,
-                                child: CustomPaint(
-                                  painter: _GaugePainter(progress: animatedProgress),
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 240,
+                                  height: 240,
+                                  child: CustomPaint(
+                                    painter: _GaugePainter(progress: animatedProgress),
+                                  ),
                                 ),
-                              ),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.directions_walk, color: Colors.white, size: 40)
-                                      .animate(onPlay: (controller) => controller.repeat())
-                                      .shimmer(duration: 1200.ms, color: Colors.white54)
-                                      .animate()
-                                      .scale(begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1), duration: 600.ms, curve: Curves.easeInOut)
-                                      .then()
-                                      .scale(begin: const Offset(1.1, 1.1), end: const Offset(1, 1), duration: 600.ms, curve: Curves.easeInOut),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "$animatedSteps",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 42,
-                                      fontWeight: FontWeight.bold,
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.directions_walk, color: Colors.white, size: 40)
+                                        .animate(onPlay: (controller) => controller.repeat())
+                                        .shimmer(duration: 1200.ms, color: Colors.white54)
+                                        .animate()
+                                        .scale(begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1), duration: 600.ms, curve: Curves.easeInOut)
+                                        .then()
+                                        .scale(begin: const Offset(1.1, 1.1), end: const Offset(1, 1), duration: 600.ms, curve: Curves.easeInOut),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "$animatedSteps",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 48,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    "Goal: ${provider.stepGoal}",
-                                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 12),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ElevatedButton(
-                                    onPressed: () => provider.removeStepGoal(500),
-                                    style: ElevatedButton.styleFrom(
-                                      shape: const CircleBorder(),
-                                      padding: const EdgeInsets.all(20),
-                                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
+                                    Text(
+                                      "Goal: ${provider.stepGoal}",
+                                      style: const TextStyle(color: Colors.white70, fontSize: 14),
                                     ),
-                                    child: const Icon(Icons.remove, size: 28),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  ElevatedButton(
-                                    onPressed: () => provider.addStepGoal(500),
-                                    style: ElevatedButton.styleFrom(
-                                      shape: const CircleBorder(),
-                                      padding: const EdgeInsets.all(20),
-                                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ElevatedButton(
+                                          onPressed: () => provider.removeStepGoal(500),
+                                          style: ElevatedButton.styleFrom(
+                                            shape: const CircleBorder(),
+                                            padding: const EdgeInsets.all(16),
+                                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                          ),
+                                          child: const Icon(Icons.remove, size: 24),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        ElevatedButton(
+                                          onPressed: () => provider.addStepGoal(500),
+                                          style: ElevatedButton.styleFrom(
+                                            shape: const CircleBorder(),
+                                            padding: const EdgeInsets.all(16),
+                                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                          ),
+                                          child: const Icon(Icons.add, size: 24),
+                                        ),
+                                      ],
                                     ),
-                                    child: const Icon(Icons.add, size: 28),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildInnerMetric("Distance", "${provider.distanceWalked.toStringAsFixed(2)} km", Icons.map_rounded),
+                            _buildInnerMetric("Active Time", "${provider.activeMinutes} min", Icons.timer_rounded),
+                            _buildInnerMetric("Calories", "${provider.caloriesBurned} kcal", Icons.local_fire_department_rounded),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildInnerMetric("Distance", "${provider.distanceWalked.toStringAsFixed(2)} km", Icons.map),
-                          _buildInnerMetric("Active Time", "${provider.activeMinutes} min", Icons.timer),
-                          _buildInnerMetric("Calories", "${provider.caloriesBurned} kcal", Icons.local_fire_department),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              )).animate().fade(duration: 500.ms, delay: 200.ms).scaleXY(begin: 0.9, end: 1.0, duration: 500.ms, curve: Curves.easeOutBack),
+                )).animate().fade(duration: 500.ms, delay: 200.ms).scaleXY(begin: 0.9, end: 1.0, duration: 500.ms, curve: Curves.easeOutBack),
+              
               const SizedBox(height: 24),
+              
               // Water Tracker Interactive Widget
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade400, Colors.blue.shade700],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  color: const Color(0xFF007AFF), // Bright solid blue
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
                   children: [
@@ -536,7 +513,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.remove, color: Colors.white, size: 28),
+                            child: const Icon(Icons.remove, color: Colors.white, size: 24),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -551,7 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.water_drop, color: Colors.white, size: 32),
+                            child: const Icon(Icons.water_drop_rounded, color: Colors.white, size: 28),
                           ).animate(key: ValueKey(provider.waterIntake)).scaleXY(begin: 0.8, end: 1.2, duration: 200.ms).then().scaleXY(begin: 1.2, end: 1, duration: 200.ms),
                         ),
                       ],
@@ -560,174 +537,173 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ).animate().fade(duration: 600.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.easeOut),
               
+              const SizedBox(height: 24),
+
               // Background Extracted Media Card & Placeholder
               const ExtractedMediaPlaceholderWidget(),
 
-              // Active Workout Tracker Simulation Panel
-
-              Card(
-                color: theme.colorScheme.primary.withValues(alpha: 0.06),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "Live Activity Tracking",
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          if (provider.isTrackingActivity)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Text("LIVE", style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (!provider.isTrackingActivity) ...[
-                        const Text("Choose an activity type to track with GPS & Sensor simulations:"),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.start,
-                          children: ["Walking", "Running", "Cycling"].map((type) {
-                            IconData icon = Icons.directions_walk;
-                            if (type == "Running") icon = Icons.directions_run;
-                            if (type == "Cycling") icon = Icons.directions_bike;
-                            return ElevatedButton.icon(
-                              onPressed: () => provider.startActivity(type),
-                              icon: Icon(icon, size: 16),
-                              label: Text(type),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.surface,
-                                foregroundColor: theme.colorScheme.primary,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                elevation: 0,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ] else ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(provider.activityType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "${(provider.activitySeconds ~/ 60).toString().padLeft(2, '0')}:${(provider.activitySeconds % 60).toString().padLeft(2, '0')}",
-                                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text("Distance: ${provider.activityDistance.toStringAsFixed(2)} km"),
-                                const SizedBox(height: 4),
-                                Text("Speed: ${provider.activityDistance > 0 ? (provider.activityDistance / (provider.activitySeconds / 3600)).toStringAsFixed(1) : '0'} km/h"),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => provider.stopActivity(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 44),
-                          ),
-                          child: const Text("Stop & Save Workout"),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 24),
 
-              // BMI Calculator Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Body Mass Index (BMI)",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
+              // Active Workout Tracker Simulation Panel
+              SoftCard(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Live Activity Tracking",
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        if (provider.isTrackingActivity)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Text("LIVE", style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    if (!provider.isTrackingActivity) ...[
+                      Text("Choose an activity type to track with GPS & Sensors:", style: theme.textTheme.labelMedium),
                       const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        alignment: WrapAlignment.start,
+                        children: ["Walking", "Running", "Cycling"].map((type) {
+                          IconData icon = Icons.directions_walk_rounded;
+                          if (type == "Running") icon = Icons.directions_run_rounded;
+                          if (type == "Cycling") icon = Icons.directions_bike_rounded;
+                          return ElevatedButton.icon(
+                            onPressed: () => provider.startActivity(type),
+                            icon: Icon(icon, size: 18),
+                            label: Text(type),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: FitzaTheme.primaryDark.withValues(alpha: 0.1),
+                              foregroundColor: FitzaTheme.primaryDark,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              elevation: 0,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ] else ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                provider.bmi.toStringAsFixed(1),
-                                style: TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w900,
-                                  color: provider.bmiColor,
-                                ),
-                              ),
+                              Text(provider.activityType, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                               const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: provider.bmiColor.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  provider.bmiCategory,
-                                  style: TextStyle(
-                                    color: provider.bmiColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                              Text(
+                                "${(provider.activitySeconds ~/ 60).toString().padLeft(2, '0')}:${(provider.activitySeconds % 60).toString().padLeft(2, '0')}",
+                                style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text("Height: ${provider.height} cm"),
+                              Text("Distance: ${provider.activityDistance.toStringAsFixed(2)} km", style: theme.textTheme.labelLarge),
                               const SizedBox(height: 4),
-                              Text("Weight: ${provider.weight} kg"),
-                              const SizedBox(height: 4),
-                              Text("Age: ${provider.age} yrs"),
+                              Text("Speed: ${provider.activityDistance > 0 ? (provider.activityDistance / (provider.activitySeconds / 3600)).toStringAsFixed(1) : '0'} km/h", style: theme.textTheme.labelLarge),
                             ],
                           ),
                         ],
                       ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => provider.stopActivity(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 50),
+                          elevation: 0,
+                        ),
+                        child: const Text("Stop & Save Workout"),
+                      ),
                     ],
-                  ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // BMI Calculator Card
+              SoftCard(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Body Mass Index (BMI)",
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              provider.bmi.toStringAsFixed(1),
+                              style: theme.textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: provider.bmiColor,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: provider.bmiColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                provider.bmiCategory,
+                                style: TextStyle(
+                                  color: provider.bmiColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text("Height: ${provider.height} cm", style: theme.textTheme.labelLarge),
+                            const SizedBox(height: 6),
+                            Text("Weight: ${provider.weight} kg", style: theme.textTheme.labelLarge),
+                            const SizedBox(height: 6),
+                            Text("Age: ${provider.age} yrs", style: theme.textTheme.labelLarge),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 100), // padding for the taskbar
@@ -735,23 +711,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-    ],
-  ),
-);
+    );
   }
 
   Widget _buildInnerMetric(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white70, size: 20),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+        Icon(icon, color: Colors.white70, size: 24),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
       ],
     );
   }
-
-
 
   void _showApiKeyDialog(BuildContext context, FitnessProvider provider) {
     final TextEditingController controller = TextEditingController(text: provider.geminiApiKey ?? "");
@@ -759,6 +732,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
           title: const Text("Settings"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -781,6 +755,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           });
                         },
                         contentPadding: EdgeInsets.zero,
+                        activeColor: FitzaTheme.primaryDark,
                       ),
                       SwitchListTile(
                         title: const Text("Auto-Sync Data"),
@@ -792,6 +767,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           });
                         },
                         contentPadding: EdgeInsets.zero,
+                        activeColor: FitzaTheme.primaryDark,
                       ),
                     ],
                   );
