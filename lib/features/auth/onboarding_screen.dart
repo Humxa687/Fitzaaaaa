@@ -245,7 +245,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Select Your Age", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text("$_selectedAge Years Old", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade600)),
+              Text("$_selectedAge Years Old", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade600)),
             ],
           ),
           const SizedBox(height: 12),
@@ -344,7 +344,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Center(
               child: Text(
                 "${_heightCm.round()} cm",
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blue.shade600),
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blue.shade600),
               ),
             ),
             Slider(
@@ -359,7 +359,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Center(
               child: Text(
                 "$_heightFt' $_heightInches\"",
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blue.shade600),
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blue.shade600),
               ),
             ),
             Row(
@@ -698,9 +698,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             );
           }),
-        ],
       ).animate().fadeIn(duration: 300.ms),
     );
+  }
+  
   // --- Step 5: Step Goal ---
   Widget _buildStepGoalStep(ThemeData theme) {
     return SingleChildScrollView(
