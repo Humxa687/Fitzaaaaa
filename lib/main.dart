@@ -157,7 +157,7 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
             right: 16,
             bottom: _isNavVisible 
                 ? 85
-                : (provider.trackTitle != null ? 75 : 16),
+                : 16,
             child: FloatingActionButton(
               onPressed: () {
                 setState(() {
