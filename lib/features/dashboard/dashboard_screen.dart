@@ -8,7 +8,6 @@ import '../../core/widgets/soft_card.dart';
 import '../profile/profile_screen.dart';
 import '../activity/activity_screen.dart';
 import '../gamification/achievements_screen.dart';
-import '../music/extracted_media_placeholder.dart';
 
 import 'dart:math' as math;
 import 'package:confetti/confetti.dart';
@@ -539,10 +538,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               
               const SizedBox(height: 24),
 
-              // Background Extracted Media Card & Placeholder
-              const ExtractedMediaPlaceholderWidget(),
 
-              const SizedBox(height: 24),
 
               // Active Workout Tracker Simulation Panel
               SoftCard(

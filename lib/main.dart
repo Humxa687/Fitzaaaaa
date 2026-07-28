@@ -8,9 +8,6 @@ import 'features/dashboard/dashboard_screen.dart';
 import 'features/dashboard/body_building_dashboard_screen.dart';
 import 'features/food_ai/food_ai_screen.dart';
 import 'features/progress/progress_screen.dart';
-import 'features/music/music_player_widget.dart';
-
-import 'features/music/music_player_widget.dart';
 import 'features/dashboard/daily_start_screen.dart';
 
 void main() {
@@ -117,8 +114,7 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
                   children: screens,
                 ),
               ),
-              if (provider.trackTitle != null)
-                const MusicPlayerWidget(),
+
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,

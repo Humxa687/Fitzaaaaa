@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 6),
 
                     Text(
-                      "Next-Gen AI Fitness & Music Experience",
+                      "Next-Gen AI Fitness Experience",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
