@@ -629,20 +629,18 @@ class FitnessProvider extends ChangeNotifier {
   Future<void> updateProfile({
     required String name,
     required int age,
-    required double height,
     required double weight,
+    required double height,
     String? gender,
     String? activityLevel,
     String? heightUnit,
     String? weightUnit,
-    String? phone,
-    String? country,
-    String? state,
     String? fitnessGoal,
     String? fitnessLevel,
     String? workoutLocation,
     int? workoutDays,
     int? workoutDuration,
+    int? stepGoal,
   }) async {
     _userName = name;
     _age = age;
@@ -663,24 +661,28 @@ class FitnessProvider extends ChangeNotifier {
     _calorieGoal = _calculateBmrCalories();
     _waterGoal = (_weight * 0.033 * 4).round().clamp(6, 16);
     
-    switch (_activityLevel) {
-      case 'Sedentary':
-        _stepGoal = 6000;
-        break;
-      case 'Lightly Active':
-        _stepGoal = 8000;
-        break;
-      case 'Moderately Active':
-        _stepGoal = 10000;
-        break;
-      case 'Very Active':
-        _stepGoal = 12000;
-        break;
-      case 'Athlete':
-        _stepGoal = 15000;
-        break;
-      default:
-        _stepGoal = 8000;
+    if (stepGoal != null) {
+      _stepGoal = stepGoal;
+    } else if (activityLevel != null) {
+      switch (_activityLevel) {
+        case 'Sedentary':
+          _stepGoal = 6000;
+          break;
+        case 'Lightly Active':
+          _stepGoal = 8000;
+          break;
+        case 'Moderately Active':
+          _stepGoal = 10000;
+          break;
+        case 'Very Active':
+          _stepGoal = 12000;
+          break;
+        case 'Athlete':
+          _stepGoal = 15000;
+          break;
+        default:
+          _stepGoal = 8000;
+      }
     }
 
     await _prefs?.setString('${_userEmail}_userName', name);

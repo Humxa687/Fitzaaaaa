@@ -39,6 +39,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String _selectedWorkoutLocation = "Home";
   int _selectedWorkoutDays = 3;
   int _selectedWorkoutDuration = 45;
+  int _selectedStepGoal = 8000;
 
   final List<String> _goals = [
     "Muscle Gain",
@@ -68,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _nextStep() {
-    if (_currentStep < 3) {
+    if (_currentStep < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
@@ -107,6 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       workoutLocation: _selectedWorkoutLocation,
       workoutDays: _selectedWorkoutDays,
       workoutDuration: _selectedWorkoutDuration,
+      stepGoal: _selectedStepGoal,
     );
 
     await _requestPermissions();
@@ -138,11 +140,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       children: [
                         Text(
-                          "STEP ${_currentStep + 1} OF 4",
-                          style: const TextStyle(
+                          "STEP ${_currentStep + 1} OF 5",
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: FitzaTheme.energyOrange,
+                            color: Colors.blue.shade600,
                             letterSpacing: 1.5,
                           ),
                         ),
@@ -150,9 +152,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
-                            value: (_currentStep + 1) / 4.0,
+                            value: (_currentStep + 1) / 5.0,
                             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                            color: FitzaTheme.energyOrange,
+                            color: Colors.blue.shade600,
                             minHeight: 6,
                           ),
                         ),
@@ -174,6 +176,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _buildHeightWeightStep(theme),
                   _buildGoalsFitnessLevelStep(theme),
                   _buildAvailabilityStep(theme),
+                  _buildStepGoalStep(theme),
                 ],
               ),
             ),
@@ -186,16 +189,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: ElevatedButton(
                   onPressed: _nextStep,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: FitzaTheme.energyOrange,
+                    backgroundColor: Colors.blue.shade600,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    elevation: 4,
+                    elevation: 0,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _currentStep == 3 ? "Complete & Start Fitza 🚀" : "Continue",
+                        _currentStep == 4 ? "Complete & Start Fitza 🚀" : "Continue",
                         style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(width: 8),
@@ -242,7 +245,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Select Your Age", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text("$_selectedAge Years Old", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: FitzaTheme.energyOrange)),
+              Text("$_selectedAge Years Old", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade600)),
             ],
           ),
           const SizedBox(height: 12),
@@ -254,7 +257,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               itemExtent: 50,
               diameterRatio: 1.2,
               scrollController: FixedExtentScrollController(initialItem: _selectedAge - 10),
-              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(background: FitzaTheme.energyOrange.withOpacity(0.1)),
+              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(background: Colors.blue.shade600.withOpacity(0.1)),
               onSelectedItemChanged: (index) {
                 setState(() => _selectedAge = 10 + index);
               },
@@ -267,7 +270,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: TextStyle(
                       fontSize: isSelected ? 28 : 22,
                       fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
-                      color: isSelected ? FitzaTheme.energyOrange : theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: isSelected ? Colors.blue.shade600 : theme.colorScheme.onSurface.withOpacity(0.5),
                     ),
                   ),
                 );
@@ -287,10 +290,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
-            color: isSel ? FitzaTheme.energyOrange.withValues(alpha: 0.15) : theme.colorScheme.surface,
+            color: isSel ? Colors.blue.shade600.withValues(alpha: 0.15) : theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.primary.withValues(alpha: 0.15),
+              color: isSel ? Colors.blue.shade600 : theme.colorScheme.primary.withValues(alpha: 0.15),
               width: isSel ? 2 : 1,
             ),
           ),
@@ -302,7 +305,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 label,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                  color: isSel ? Colors.blue.shade600 : theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -341,7 +344,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Center(
               child: Text(
                 "${_heightCm.round()} cm",
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: FitzaTheme.energyOrange),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blue.shade600),
               ),
             ),
             Slider(
@@ -349,14 +352,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               min: 100,
               max: 250,
               divisions: 150,
-              activeColor: FitzaTheme.energyOrange,
+              activeColor: Colors.blue.shade600,
               onChanged: (val) => setState(() => _heightCm = val),
             ),
           ] else ...[
             Center(
               child: Text(
                 "$_heightFt' $_heightInches\"",
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: FitzaTheme.energyOrange),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blue.shade600),
               ),
             ),
             Row(
@@ -367,7 +370,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     min: 3,
                     max: 8,
                     divisions: 5,
-                    activeColor: FitzaTheme.energyOrange,
+                    activeColor: Colors.blue.shade600,
                     onChanged: (val) => setState(() => _heightFt = val.round()),
                   ),
                 ),
@@ -377,7 +380,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     min: 0,
                     max: 11,
                     divisions: 11,
-                    activeColor: FitzaTheme.energyOrange,
+                    activeColor: Colors.blue.shade600,
                     onChanged: (val) => setState(() => _heightInches = val.round()),
                   ),
                 ),
@@ -410,7 +413,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               scrollController: FixedExtentScrollController(
                 initialItem: _isWeightKg ? _weightKg - 30 : _weightLbs - 66
               ),
-              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(background: FitzaTheme.energyOrange.withOpacity(0.1)),
+              selectionOverlay: CupertinoPickerDefaultSelectionOverlay(background: Colors.blue.shade600.withOpacity(0.1)),
               onSelectedItemChanged: (index) {
                 setState(() {
                   if (_isWeightKg) {
@@ -429,7 +432,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: TextStyle(
                       fontSize: isSelected ? 28 : 22,
                       fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
-                      color: isSelected ? FitzaTheme.energyOrange : theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: isSelected ? Colors.blue.shade600 : theme.colorScheme.onSurface.withOpacity(0.5),
                     ),
                   ),
                 );
@@ -465,7 +468,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? FitzaTheme.energyOrange : Colors.transparent,
+          color: isSelected ? Colors.blue.shade600 : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -503,10 +506,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 label: Text(g),
                 selected: isSel,
                 onSelected: (val) => setState(() => _selectedGoal = g),
-                selectedColor: FitzaTheme.energyOrange.withOpacity(0.2),
-                checkmarkColor: FitzaTheme.energyOrange,
+                selectedColor: Colors.blue.shade600.withOpacity(0.2),
+                checkmarkColor: Colors.blue.shade600,
                 labelStyle: TextStyle(
-                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                  color: isSel ? Colors.blue.shade600 : theme.colorScheme.onSurface,
                   fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                 ),
               );
@@ -526,10 +529,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 label: Text(lvl),
                 selected: isSel,
                 onSelected: (val) => setState(() => _selectedFitnessLevel = lvl),
-                selectedColor: FitzaTheme.energyOrange.withOpacity(0.2),
-                checkmarkColor: FitzaTheme.energyOrange,
+                selectedColor: Colors.blue.shade600.withOpacity(0.2),
+                checkmarkColor: Colors.blue.shade600,
                 labelStyle: TextStyle(
-                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                  color: isSel ? Colors.blue.shade600 : theme.colorScheme.onSurface,
                   fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                 ),
               );
@@ -550,10 +553,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: isSel ? FitzaTheme.energyOrange.withOpacity(0.15) : theme.colorScheme.surface,
+                      color: isSel ? Colors.blue.shade600.withOpacity(0.15) : theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.primary.withOpacity(0.15),
+                        color: isSel ? Colors.blue.shade600 : theme.colorScheme.primary.withOpacity(0.15),
                         width: isSel ? 2 : 1,
                       ),
                     ),
@@ -561,9 +564,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       children: [
                         Icon(loc == "Home" ? Icons.home_rounded : Icons.fitness_center_rounded, 
                              size: 32, 
-                             color: isSel ? FitzaTheme.energyOrange : Colors.grey),
+                             color: isSel ? Colors.blue.shade600 : Colors.grey),
                         const SizedBox(height: 8),
-                        Text(loc, style: TextStyle(fontWeight: FontWeight.bold, color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface)),
+                        Text(loc, style: TextStyle(fontWeight: FontWeight.bold, color: isSel ? Colors.blue.shade600 : theme.colorScheme.onSurface)),
                       ],
                     ),
                   ),
@@ -603,9 +606,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   height: 40,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.surface,
+                    color: isSel ? Colors.blue.shade600 : theme.colorScheme.surface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: isSel ? FitzaTheme.energyOrange : Colors.grey.withOpacity(0.3)),
+                    border: Border.all(color: isSel ? Colors.blue.shade600 : Colors.grey.withOpacity(0.3)),
                   ),
                   child: Text(
                     "$days",
@@ -633,10 +636,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 label: Text("$duration min"),
                 selected: isSel,
                 onSelected: (val) => setState(() => _selectedWorkoutDuration = duration),
-                selectedColor: FitzaTheme.energyOrange.withOpacity(0.2),
-                checkmarkColor: FitzaTheme.energyOrange,
+                selectedColor: Colors.blue.shade600.withOpacity(0.2),
+                checkmarkColor: Colors.blue.shade600,
                 labelStyle: TextStyle(
-                  color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                  color: isSel ? Colors.blue.shade600 : theme.colorScheme.onSurface,
                   fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                 ),
               );
@@ -656,10 +659,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isSel ? FitzaTheme.energyOrange.withValues(alpha: 0.15) : theme.colorScheme.surface,
+                    color: isSel ? Colors.blue.shade600.withValues(alpha: 0.15) : theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.primary.withValues(alpha: 0.15),
+                      color: isSel ? Colors.blue.shade600 : theme.colorScheme.primary.withValues(alpha: 0.15),
                       width: isSel ? 2 : 1,
                     ),
                   ),
@@ -667,7 +670,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       Icon(
                         isSel ? Icons.radio_button_checked : Icons.radio_button_off,
-                        color: isSel ? FitzaTheme.energyOrange : Colors.grey,
+                        color: isSel ? Colors.blue.shade600 : Colors.grey,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -678,7 +681,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               activity["title"]!,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: isSel ? FitzaTheme.energyOrange : theme.colorScheme.onSurface,
+                                color: isSel ? Colors.blue.shade600 : theme.colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -695,6 +698,53 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             );
           }),
+        ],
+      ).animate().fadeIn(duration: 300.ms),
+    );
+  // --- Step 5: Step Goal ---
+  Widget _buildStepGoalStep(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Daily Step Goal 🚶", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text("Set your default daily step goal.", style: TextStyle(color: Colors.grey)),
+
+          const SizedBox(height: 40),
+
+          Center(
+            child: Text(
+              "$_selectedStepGoal",
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.w900,
+                color: Colors.blue.shade600,
+              ),
+            ),
+          ),
+          const Center(child: Text("Steps/Day", style: TextStyle(fontSize: 16, color: Colors.grey))),
+
+          const SizedBox(height: 40),
+
+          Slider(
+            value: _selectedStepGoal.toDouble(),
+            min: 1000,
+            max: 20000,
+            divisions: 38, // 500 step increments
+            activeColor: Colors.blue.shade600,
+            onChanged: (val) {
+              setState(() => _selectedStepGoal = val.round());
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          const Text(
+            "You can always adjust this later from your dashboard.",
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
         ],
       ).animate().fadeIn(duration: 300.ms),
     );

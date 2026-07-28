@@ -252,10 +252,10 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: FitzaTheme.energyOrange.withValues(alpha: 0.1),
+                              color: FitzaTheme.primaryDark.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.local_fire_department_rounded, color: FitzaTheme.energyOrange, size: 28),
+                            child: const Icon(Icons.local_fire_department_rounded, color: FitzaTheme.primaryDark, size: 28),
                           ),
                           const SizedBox(height: 16),
                           Text("${provider.caloriesBurned}", style: theme.textTheme.headlineMedium?.copyWith(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
@@ -274,10 +274,10 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: FitzaTheme.accentNeon.withValues(alpha: 0.1),
+                              color: FitzaTheme.primaryDark.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.timer_rounded, color: FitzaTheme.accentNeon, size: 28),
+                            child: const Icon(Icons.timer_rounded, color: FitzaTheme.primaryDark, size: 28),
                           ),
                           const SizedBox(height: 16),
                           Text("${provider.activeMinutes}", style: theme.textTheme.headlineMedium?.copyWith(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),

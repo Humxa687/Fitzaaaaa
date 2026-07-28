@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 content: Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: FitzaTheme.energyOrange,
+                    color: FitzaTheme.primaryDark,
                     borderRadius: BorderRadius.circular(32),
                   ),
                   child: Column(
@@ -104,7 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: FitzaTheme.energyOrange,
+                          foregroundColor: FitzaTheme.primaryDark,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -310,7 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: FitzaTheme.energyOrange,
+                    color: FitzaTheme.primaryDark,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Row(
