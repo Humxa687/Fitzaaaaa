@@ -457,13 +457,6 @@ class FitnessProvider extends ChangeNotifier {
   }
 
 
-  }
-
-  Future<void> toggleLoop() async {
-    _isLooping = !_isLooping;
-    await _audioPlayer.setReleaseMode(_isLooping ? ReleaseMode.loop : ReleaseMode.release);
-    notifyListeners();
-  }
 
   void setTheme(AppThemeMode mode) {
     _currentTheme = mode;
