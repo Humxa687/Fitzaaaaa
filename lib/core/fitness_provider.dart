@@ -178,29 +178,130 @@ class FitnessProvider extends ChangeNotifier {
   int _todayWater = 3;
   int get todayWater => _todayWater;
 
-  // --- Gamification ---
-  int _currentStreak = 0;
+  // --- Gamification & 25 Feature State ---
+  int _currentStreak = 12;
   int get currentStreak => _currentStreak;
 
-  int _userXp = 0;
+  int _streakFreezes = 2;
+  int get streakFreezes => _streakFreezes;
+
+  int _userXp = 2850;
   int get userXp => _userXp;
 
   int get userLevel => (_userXp ~/ 1000) + 1;
 
   String get levelTitle {
     int lvl = userLevel;
-    if (lvl < 2) return "Beginner";
-    if (lvl < 5) return "Amateur";
-    if (lvl < 10) return "Pro";
-    if (lvl < 20) return "Athlete";
-    return "Elite";
+    if (lvl <= 5) return "Rookie";
+    if (lvl <= 15) return "Athlete";
+    if (lvl <= 30) return "Warrior";
+    if (lvl <= 50) return "Beast";
+    return "Legend";
   }
+
+  int _coins = 480;
+  int get coins => _coins;
+
+  // Character Evolution
+  String get avatarStage {
+    int lvl = userLevel;
+    if (lvl < 5) return "Rookie Build";
+    if (lvl < 15) return "Athletic Tone";
+    if (lvl < 30) return "Defined Warrior";
+    if (lvl < 50) return "Beast Physique";
+    return "Legendary Titan";
+  }
+
+  // Fitness Pet State
+  String _petName = "Fitzy";
+  String get petName => _petName;
+  int _petHealth = 88;
+  int get petHealth => _petHealth;
+  String _petMood = "Happy";
+  String get petMood => _petMood;
+  int _petLevel = 4;
+  int get petLevel => _petLevel;
+  String _petOutfit = "Gym Hoodie";
+  String get petOutfit => _petOutfit;
+
+  // Weekly Boss Battle
+  String _bossName = "Inferno Dragon";
+  String get bossName => _bossName;
+  int _bossMaxHp = 1000;
+  int get bossMaxHp => _bossMaxHp;
+  int _bossCurrentHp = 640;
+  int get bossCurrentHp => _bossCurrentHp;
+
+  // Journey Map & Story Mode
+  int _currentMapNode = 2; // 0: Village, 1: Forest, 2: Mountain, 3: Temple, 4: Volcano, 5: Arena
+  int get currentMapNode => _currentMapNode;
+  int _storyChapter = 1;
+  int get storyChapter => _storyChapter;
+  double _storyProgress = 0.65;
+  double get storyProgress => _storyProgress;
+
+  // Readiness / Recovery Score
+  int _recoveryScore = 86;
+  int get recoveryScore => _recoveryScore;
+  double _sleepHours = 7.8;
+  double get sleepHours => _sleepHours;
+  String _sorenessLevel = "Low";
+  String get sorenessLevel => _sorenessLevel;
+
+  // Weather Condition
+  String _weatherCondition = "Sunny"; // Sunny, Rainy, Cloudy, Cold
+  String get weatherCondition => _weatherCondition;
+  int _weatherTemp = 24;
+  int get weatherTemp => _weatherTemp;
+
+  // Badges & Shop Items
+  final List<String> _unlockedBadges = ['first_workout', 'streak_7', 'calories_5000', 'morning_warrior'];
+  List<String> get unlockedBadges => List.unmodifiable(_unlockedBadges);
+
+  final List<String> _ownedShopItems = ['streak_freeze', 'pet_hoodie', 'theme_neon_cyber'];
+  List<String> get ownedShopItems => List.unmodifiable(_ownedShopItems);
+
+  // Muscle Heatmap Intensity (0.0 to 1.0)
+  Map<String, double> _muscleHeatmap = {
+    'Chest': 0.90,
+    'Arms': 0.75,
+    'Shoulders': 0.65,
+    'Abs': 0.50,
+    'Back': 0.35,
+    'Legs': 0.40,
+  };
+  Map<String, double> get muscleHeatmap => Map.unmodifiable(_muscleHeatmap);
+
+  // Transformation Photos
+  final List<Map<String, String>> _transformationPhotos = [
+    {'date': 'Month 1', 'label': 'Initial Starting Point', 'tag': 'Before'},
+    {'date': 'Month 3', 'label': 'Muscle Definition & Tone', 'tag': 'Progress'},
+    {'date': 'Month 6', 'label': 'Peak Condition', 'tag': 'After'},
+  ];
+  List<Map<String, String>> get transformationPhotos => List.unmodifiable(_transformationPhotos);
 
   // --- Wear OS Sync Status ---
   bool _isWearOsSynced = true;
   DateTime _lastWearOsSync = DateTime.now();
   bool get isWearOsSynced => _isWearOsSynced;
   DateTime get lastWearOsSync => _lastWearOsSync;
+
+  // --- Music State ---
+  String? _trackTitle = "Fitness Motivation Mix";
+  String? _trackArtist = "Fitza Audio";
+  String? _trackCoverUrl; // Uses placeholder
+  bool _isPlaying = false;
+  bool _isLooping = false;
+  Duration _currentPosition = Duration.zero;
+  Duration _totalDuration = const Duration(minutes: 3, seconds: 45);
+
+  String? get trackTitle => _trackTitle;
+  String? get trackArtist => _trackArtist;
+  String? get trackCoverUrl => _trackCoverUrl;
+  bool get isPlaying => _isPlaying;
+  bool get isLooping => _isLooping;
+  Duration get currentPosition => _currentPosition;
+  Duration get totalDuration => _totalDuration;
 
   // --- Water Intake State ---
   int _waterIntake = 0; // glasses
@@ -888,7 +989,39 @@ class FitnessProvider extends ChangeNotifier {
   void setPushNotifications(bool value) {
     _pushNotificationsEnabled = value;
     _prefs?.setBool('pushNotifications', value);
+    _updateStepNotification();
     notifyListeners();
+  }
+
+  void togglePushNotifications(bool value) => setPushNotifications(value);
+
+  void setStepGoal(int value) {
+    _stepGoal = value;
+    _prefs?.setInt('${_userEmail}_stepGoal', value);
+    _updateStepNotification();
+    notifyListeners();
+  }
+
+  void setCalorieGoal(int value) {
+    _calorieGoal = value;
+    _prefs?.setInt('${_userEmail}_calorieGoal', value);
+    notifyListeners();
+  }
+
+  void setWeightUnit(String unit) {
+    _weightUnit = unit;
+    _prefs?.setString('${_userEmail}_weightUnit', unit);
+    notifyListeners();
+  }
+
+  void setHeightUnit(String unit) {
+    _heightUnit = unit;
+    _prefs?.setString('${_userEmail}_heightUnit', unit);
+    notifyListeners();
+  }
+
+  void syncToCloud() {
+    syncDataToCloud();
   }
 
   void setAutoSync(bool value) {
@@ -1018,13 +1151,33 @@ class FitnessProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void resetActivity() {
+  void resetLiveActivity() {
     _isTrackingActivity = false;
-    _activityTimer?.cancel();
-    _positionStream?.cancel();
-    _activitySeconds = 0;
     _activityDistance = 0.0;
-    _activityPath = [];
+    _activitySeconds = 0;
+    notifyListeners();
+  }
+
+  // --- Music Controls ---
+  void playPauseMusic() {
+    _isPlaying = !_isPlaying;
+    notifyListeners();
+  }
+
+  void nextMusic() {
+    _currentPosition = Duration.zero;
+    _isPlaying = true;
+    notifyListeners();
+  }
+
+  void prevMusic() {
+    _currentPosition = Duration.zero;
+    _isPlaying = true;
+    notifyListeners();
+  }
+
+  void toggleLooping() {
+    _isLooping = !_isLooping;
     notifyListeners();
   }
 
@@ -1056,6 +1209,166 @@ class FitnessProvider extends ChangeNotifier {
     _prefs?.setDouble('weight', newWeight);
     _prefs?.setString('weightHistory', jsonEncode(_weightLogs.map((e) => e.toJson()).toList()));
     notifyListeners();
+  }
+
+  // --- Feature 1: Streak & Streak Freeze ---
+  bool useStreakFreeze() {
+    if (_streakFreezes > 0) {
+      _streakFreezes--;
+      _prefs?.setInt('${_userEmail}_streakFreezes', _streakFreezes);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  void buyStreakFreeze() {
+    if (_coins >= 150) {
+      _coins -= 150;
+      _streakFreezes++;
+      _prefs?.setInt('${_userEmail}_coins', _coins);
+      _prefs?.setInt('${_userEmail}_streakFreezes', _streakFreezes);
+      notifyListeners();
+    }
+  }
+
+  // --- Feature 4 & 15: XP & Coins Economy ---
+  void addXp(int amount, {String? source}) {
+    int oldLevel = userLevel;
+    _userXp += amount;
+    _prefs?.setInt('${_userEmail}_userXp', _userXp);
+    if (userLevel > oldLevel) {
+      _petHealth = 100;
+      _coins += 100; // Level up bonus
+    }
+    notifyListeners();
+  }
+
+  void addCoins(int amount) {
+    _coins += amount;
+    _prefs?.setInt('${_userEmail}_coins', _coins);
+    notifyListeners();
+  }
+
+  bool buyShopItem(String itemId, int cost) {
+    if (_coins >= cost && !_ownedShopItems.contains(itemId)) {
+      _coins -= cost;
+      _ownedShopItems.add(itemId);
+      if (itemId.contains('streak_freeze')) {
+        _streakFreezes++;
+      }
+      _prefs?.setInt('${_userEmail}_coins', _coins);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  // --- Feature 14: Daily Mystery Box ---
+  Map<String, dynamic> claimMysteryBox() {
+    final rand = Random();
+    int rewardType = rand.nextInt(3);
+    Map<String, dynamic> result = {};
+
+    if (rewardType == 0) {
+      int coinsEarned = 100 + rand.nextInt(200);
+      addCoins(coinsEarned);
+      result = {'title': '$coinsEarned Coins!', 'icon': '💰', 'type': 'coins', 'amount': coinsEarned};
+    } else if (rewardType == 1) {
+      int xpEarned = 250 + rand.nextInt(300);
+      addXp(xpEarned, source: "Mystery Box");
+      result = {'title': '$xpEarned XP Bonus!', 'icon': '⚡', 'type': 'xp', 'amount': xpEarned};
+    } else {
+      _streakFreezes++;
+      _prefs?.setInt('${_userEmail}_streakFreezes', _streakFreezes);
+      notifyListeners();
+      result = {'title': '1 Streak Freeze!', 'icon': '🛡️', 'type': 'freeze', 'amount': 1};
+    }
+    return result;
+  }
+
+  // --- Feature 13: Weekly Boss Battle ---
+  void attackBoss(int damage) {
+    _bossCurrentHp = max(0, _bossCurrentHp - damage);
+    if (_bossCurrentHp == 0) {
+      addCoins(500);
+      addXp(1000, source: "Boss Victory");
+      _bossCurrentHp = 1000; // Reset boss
+      if (!_unlockedBadges.contains('boss_slayer')) {
+        _unlockedBadges.add('boss_slayer');
+      }
+    }
+    notifyListeners();
+  }
+
+  // --- Feature 12: Fitness Pet ---
+  void interactWithPet() {
+    _petMood = "Energetic";
+    _petHealth = min(100, _petHealth + 10);
+    notifyListeners();
+  }
+
+  void changePetOutfit(String outfit) {
+    _petOutfit = outfit;
+    notifyListeners();
+  }
+
+  // --- Feature 19: Recovery Score ---
+  void updateRecovery(int score, double sleep, String soreness) {
+    _recoveryScore = score;
+    _sleepHours = sleep;
+    _sorenessLevel = soreness;
+    notifyListeners();
+  }
+
+  // --- Feature 21: Dynamic Weather ---
+  void setWeatherCondition(String condition, int temp) {
+    _weatherCondition = condition;
+    _weatherTemp = temp;
+    notifyListeners();
+  }
+
+  // --- Feature 7: Muscle Heatmap ---
+  void updateMuscleGlow(List<String> muscles) {
+    for (var m in muscles) {
+      if (_muscleHeatmap.containsKey(m)) {
+        _muscleHeatmap[m] = 1.0; // Max intensity
+      }
+    }
+    notifyListeners();
+  }
+
+  // --- Feature 20: Full Workout Log with Gamification ---
+  void logWorkoutCompleted({
+    required String name,
+    required int calories,
+    required int xp,
+    required List<String> muscles,
+    required int durationMinutes,
+  }) {
+    addXp(xp, source: name);
+    addCoins(calories ~/ 3);
+    attackBoss(calories);
+    updateMuscleGlow(muscles);
+    _petHealth = min(100, _petHealth + 15);
+    _petMood = "Happy";
+    _storyProgress = min(1.0, _storyProgress + 0.15);
+    _currentStreak++;
+    _prefs?.setInt('${_userEmail}_currentStreak', _currentStreak);
+    notifyListeners();
+  }
+
+  // --- Feature 2: Smart AI Coach Dynamic Messages ---
+  String getAiCoachMessage() {
+    if (_currentStreak >= 7) {
+      return "🔥 You completed 92% of your workouts this week. Let's keep your $_currentStreak-day streak burning strong!";
+    } else if (_recoveryScore < 60) {
+      return "❤️ Your recovery score is $_recoveryScore%. Today is ideal for an active recovery or stretching session.";
+    } else if (_weatherCondition.toLowerCase() == "rainy") {
+      return "🌧️ Rainy weather outside! Perfect day for an intense indoor home HIIT workout.";
+    } else {
+      return "💪 Your shoulders and chest are improving fast. Ready for today's workout?";
+    }
   }
 
   @override

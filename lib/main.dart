@@ -9,6 +9,7 @@ import 'features/dashboard/body_building_dashboard_screen.dart';
 import 'features/food_ai/food_ai_screen.dart';
 import 'features/progress/progress_screen.dart';
 import 'features/dashboard/daily_start_screen.dart';
+import 'features/music/music_player_widget.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,7 +70,7 @@ class MainNavigationLayout extends StatefulWidget {
 
 class _MainNavigationLayoutState extends State<MainNavigationLayout> {
   int _currentIndex = 0;
-  bool _isNavVisible = false;
+  bool _isNavVisible = true;
 
   @override
   void initState() {
@@ -114,7 +115,8 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
                   children: screens,
                 ),
               ),
-
+              if (provider.trackTitle != null)
+                const MusicPlayerWidget(),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,

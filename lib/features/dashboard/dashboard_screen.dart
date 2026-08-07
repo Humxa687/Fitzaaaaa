@@ -6,8 +6,13 @@ import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/soft_card.dart';
 import '../profile/profile_screen.dart';
+import '../profile/settings_screen.dart';
 import '../activity/activity_screen.dart';
 import '../gamification/achievements_screen.dart';
+import '../workouts/form_analysis_screen.dart';
+import '../workouts/smart_generator_dialog.dart';
+import 'recovery_score_card.dart';
+import 'weather_workout_widget.dart';
 
 import 'dart:math' as math;
 import 'package:confetti/confetti.dart';
@@ -204,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       IconButton(
                         icon: Icon(Icons.settings_outlined, color: isDark ? Colors.white : Colors.black),
                         onPressed: () {
-                          _showApiKeyDialog(context, provider);
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                         },
                       ),
                       const SizedBox(width: 8),
@@ -233,82 +238,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: 32),
 
-              // Soft Segmented Control for Goal
+              const SizedBox(height: 16),
+
+              // Feature 2: AI Fitness Coach Personalized Message Banner
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(100),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.25),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    )
+                  ],
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(100),
-                          boxShadow: [
-                            if (!isDark)
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              )
-                          ],
+                    Row(
+                      children: const [
+                        Text("🤖", style: TextStyle(fontSize: 24)),
+                        SizedBox(width: 8),
+                        Text(
+                          "AI FITNESS COACH",
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2),
                         ),
-                        child: Center(
-                          child: Text(
-                            "Weight Loss",
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: isDark ? Colors.white : Colors.black,
-                            ),
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          provider.updateProfile(
-                            name: provider.userName,
-                            age: provider.age,
-                            weight: provider.weight,
-                            height: provider.height,
-                            fitnessGoal: "Build Muscle",
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Center(
-                            child: Text(
-                              "Body Building",
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: isDark ? Colors.white54 : Colors.black54,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    const SizedBox(height: 10),
+                    Text(
+                      provider.getAiCoachMessage(),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
                     ),
                   ],
                 ),
-              ).animate().fade(delay: 100.ms),
+              ).animate().fade(duration: 400.ms).slideY(begin: 0.1, end: 0),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
-              // Gamification Banner (Clean)
+              // Feature 19 & 21: Recovery Score & Dynamic Weather Suggestions
+              const RecoveryScoreCard(),
+              const SizedBox(height: 14),
+              const WeatherWorkoutWidget(),
+              const SizedBox(height: 16),
+
+              // Daily Streak & Achievements Banner
               InkWell(
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AchievementsScreen()));
                 },
                 borderRadius: BorderRadius.circular(24),
                 child: Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
                     color: FitzaTheme.primaryDark,
                     borderRadius: BorderRadius.circular(24),
@@ -321,155 +308,238 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 32),
+                        child: const Icon(Icons.local_fire_department_rounded, color: Colors.amber, size: 30),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("${provider.currentStreak} Day Streak", style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                            Text(
+                              "${provider.currentStreak} Day Streak 🔥 • Level ${provider.userLevel} ${provider.levelTitle}",
+                              style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                             const SizedBox(height: 4),
-                            Text("Lvl ${provider.userLevel} ${provider.levelTitle}", style: theme.textTheme.labelMedium?.copyWith(color: Colors.white70)),
+                            Text(
+                              "${provider.userXp} XP • View Badges & Achievements",
+                              style: theme.textTheme.labelMedium?.copyWith(color: Colors.white70),
+                            ),
                           ],
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 18),
+                    ],
+                  ),
+                ),
+              ).animate().fade(duration: 500.ms, delay: 200.ms),
+
+              const SizedBox(height: 16),
+
+              // AI Workout Actions Row (Smart Generator & AI Form Camera Simulation)
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        showDialog(context: context, builder: (_) => const SmartGeneratorDialog());
+                      },
+                      icon: const Icon(Icons.psychology_rounded, color: Colors.amber),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text("Smart Generator")),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const FormAnalysisScreen()));
+                      },
+                      icon: const Icon(Icons.camera_front_rounded, color: Colors.cyanAccent),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text("AI Camera Check")),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 24),
+
+              // Next-Gen Today's Step Progress Tracker
+              InkWell(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityScreen()));
+                },
+                borderRadius: BorderRadius.circular(32),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00F2FE).withValues(alpha: 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      )
+                    ],
+                    border: Border.all(
+                      color: const Color(0xFF00F2FE).withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Header Title & Live Status Badge
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("${provider.userXp} XP", style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: 60,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: (provider.userXp % 1000) / 1000.0,
-                                backgroundColor: Colors.white.withValues(alpha: 0.3),
-                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                minHeight: 6,
+                          Row(
+                            children: const [
+                              Icon(Icons.directions_walk_rounded, color: Color(0xFF00F2FE), size: 24),
+                              SizedBox(width: 8),
+                              Text(
+                                "Today's Step Progress",
+                                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
                               ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00F2FE).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFF00F2FE).withValues(alpha: 0.4)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF00F2FE),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "${((provider.todaySteps / (provider.stepGoal > 0 ? provider.stepGoal : 1)) * 100).clamp(0, 100).toInt()}% Done",
+                                  style: const TextStyle(color: Color(0xFF00F2FE), fontSize: 11, fontWeight: FontWeight.w900),
+                                ),
+                              ],
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Central Glowing Cyber Gauge Ring & Counter
+                      TweenAnimationBuilder<int>(
+                        tween: IntTween(begin: 0, end: provider.todaySteps),
+                        duration: const Duration(seconds: 2),
+                        curve: Curves.easeOutExpo,
+                        builder: (context, animatedSteps, child) {
+                          double animatedProgress = provider.stepGoal > 0 ? animatedSteps / provider.stepGoal : 0;
+                          if (animatedProgress > 1.0) animatedProgress = 1.0;
+
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 230,
+                                height: 230,
+                                child: CustomPaint(
+                                  painter: _GaugePainter(progress: animatedProgress),
+                                ),
+                              ),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.directions_run_rounded, color: Color(0xFF00F2FE), size: 36)
+                                      .animate(onPlay: (controller) => controller.repeat())
+                                      .shimmer(duration: 1500.ms, color: Colors.white)
+                                      .animate()
+                                      .scale(begin: const Offset(0.95, 0.95), end: const Offset(1.05, 1.05), duration: 800.ms, curve: Curves.easeInOut),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "$animatedSteps",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 46,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -1,
+                                    ),
+                                  ),
+                                  Text(
+                                    "Target: ${provider.stepGoal} steps",
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Increment / Decrement Controls
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () => provider.removeStepGoal(500),
+                                        icon: const Icon(Icons.remove_circle_outline_rounded),
+                                        color: Colors.white70,
+                                        iconSize: 28,
+                                        tooltip: "-500 Steps",
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Text(
+                                          "±500",
+                                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        onPressed: () => provider.addStepGoal(500),
+                                        icon: const Icon(Icons.add_circle_outline_rounded),
+                                        color: const Color(0xFF00F2FE),
+                                        iconSize: 28,
+                                        tooltip: "+500 Steps",
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 3-Column Modern Metric Cards
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildInnerMetric("Distance", "${provider.distanceWalked.toStringAsFixed(2)} km", Icons.map_rounded, Colors.blueAccent),
+                          _buildInnerMetric("Active Time", "${provider.activeMinutes} min", Icons.timer_rounded, Colors.purpleAccent),
+                          _buildInnerMetric("Calories", "${provider.caloriesBurned} kcal", Icons.local_fire_department_rounded, Colors.deepOrange),
                         ],
                       ),
                     ],
                   ),
                 ),
-              ).animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOut),
-              
-              const SizedBox(height: 24),
-
-              // Circular Step Goal Tracker & Live Step Counter
-              Center(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityScreen()));
-                  },
-                  borderRadius: BorderRadius.circular(32),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: FitzaTheme.primaryDark,
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "Today's Step Progress",
-                          style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 24),
-                        TweenAnimationBuilder<int>(
-                          tween: IntTween(begin: 0, end: provider.todaySteps),
-                          duration: const Duration(seconds: 2),
-                          curve: Curves.easeOutExpo,
-                          builder: (context, animatedSteps, child) {
-                            double animatedProgress = provider.stepGoal > 0 ? animatedSteps / provider.stepGoal : 0;
-                            if (animatedProgress > 1.0) animatedProgress = 1.0;
-
-                            return Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 240,
-                                  height: 240,
-                                  child: CustomPaint(
-                                    painter: _GaugePainter(progress: animatedProgress),
-                                  ),
-                                ),
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.directions_walk, color: Colors.white, size: 40)
-                                        .animate(onPlay: (controller) => controller.repeat())
-                                        .shimmer(duration: 1200.ms, color: Colors.white54)
-                                        .animate()
-                                        .scale(begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1), duration: 600.ms, curve: Curves.easeInOut)
-                                        .then()
-                                        .scale(begin: const Offset(1.1, 1.1), end: const Offset(1, 1), duration: 600.ms, curve: Curves.easeInOut),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "$animatedSteps",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 48,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      "Goal: ${provider.stepGoal}",
-                                      style: const TextStyle(color: Colors.white70, fontSize: 14),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        ElevatedButton(
-                                          onPressed: () => provider.removeStepGoal(500),
-                                          style: ElevatedButton.styleFrom(
-                                            shape: const CircleBorder(),
-                                            padding: const EdgeInsets.all(16),
-                                            backgroundColor: Colors.white.withValues(alpha: 0.2),
-                                            foregroundColor: Colors.white,
-                                            elevation: 0,
-                                          ),
-                                          child: const Icon(Icons.remove, size: 24),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        ElevatedButton(
-                                          onPressed: () => provider.addStepGoal(500),
-                                          style: ElevatedButton.styleFrom(
-                                            shape: const CircleBorder(),
-                                            padding: const EdgeInsets.all(16),
-                                            backgroundColor: Colors.white.withValues(alpha: 0.2),
-                                            foregroundColor: Colors.white,
-                                            elevation: 0,
-                                          ),
-                                          child: const Icon(Icons.add, size: 24),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildInnerMetric("Distance", "${provider.distanceWalked.toStringAsFixed(2)} km", Icons.map_rounded),
-                            _buildInnerMetric("Active Time", "${provider.activeMinutes} min", Icons.timer_rounded),
-                            _buildInnerMetric("Calories", "${provider.caloriesBurned} kcal", Icons.local_fire_department_rounded),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                )).animate().fade(duration: 500.ms, delay: 200.ms).scaleXY(begin: 0.9, end: 1.0, duration: 500.ms, curve: Curves.easeOutBack),
+              ).animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.05, end: 0),
               
               const SizedBox(height: 24),
               
@@ -710,103 +780,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildInnerMetric(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white70, size: 24),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
-      ],
+  Widget _buildInnerMetric(String label, String value, IconData icon, [Color accentColor = const Color(0xFF00F2FE)]) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accentColor.withValues(alpha: 0.25), width: 1.2),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: accentColor, size: 22),
+          const SizedBox(height: 6),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11)),
+        ],
+      ),
     );
   }
 
-  void _showApiKeyDialog(BuildContext context, FitnessProvider provider) {
-    final TextEditingController controller = TextEditingController(text: provider.geminiApiKey ?? "");
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          title: const Text("Settings"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("General Preferences", style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              // Needs State builder for the dialog to update live
-              StatefulBuilder(
-                builder: (context, setDialogState) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SwitchListTile(
-                        title: const Text("Push Notifications"),
-                        subtitle: const Text("Get activity reminders"),
-                        value: provider.pushNotificationsEnabled,
-                        onChanged: (val) {
-                          setDialogState(() {
-                            provider.setPushNotifications(val);
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                        activeColor: FitzaTheme.primaryDark,
-                      ),
-                      SwitchListTile(
-                        title: const Text("Auto-Sync Data"),
-                        subtitle: const Text("Sync with Wear OS daily"),
-                        value: provider.autoSyncEnabled,
-                        onChanged: (val) {
-                          setDialogState(() {
-                            provider.setAutoSync(val);
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                        activeColor: FitzaTheme.primaryDark,
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const Divider(height: 24),
-              const Text("AI Integration", style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text("Enter your Gemini API Key to enable AI features (Food & Weight Scanners).", style: TextStyle(fontSize: 13)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: "API Key",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.key),
-                ),
-                obscureText: true,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                provider.setGeminiApiKey(controller.text.trim());
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("API Key Saved!")),
-                );
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // A custom Path to paint stars
   Path drawStar(Size size) {
     // Method to convert degree to radians
     double degToRad(double deg) => deg * (3.141592653589793 / 180.0);
@@ -839,28 +832,43 @@ class _GaugePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width / 2, size.height / 2);
+    final radius = math.min(size.width / 2, size.height / 2) - 10;
     
-    // Draw a gauge from 140 degrees to 40 degrees (260 degree sweep)
+    // 260-degree sweep arc from 140 to 40 degrees
     const startAngle = 140 * math.pi / 180;
     const sweepAngle = 260 * math.pi / 180;
 
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // Background track arc
     final backgroundPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.2)
-      ..strokeWidth = 18
+      ..color = Colors.white.withValues(alpha: 0.12)
+      ..strokeWidth = 16
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final rect = Rect.fromCircle(center: center, radius: radius);
     canvas.drawArc(rect, startAngle, sweepAngle, false, backgroundPaint);
 
-    final progressPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 18
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    // Glowing Neon Gradient Active Arc
+    if (progress > 0) {
+      final gradient = SweepGradient(
+        startAngle: startAngle,
+        endAngle: startAngle + (sweepAngle * progress),
+        colors: const [
+          Color(0xFF00F2FE), // Electric Cyan
+          Color(0xFF4FACFE), // Blue
+          Color(0xFF00E676), // Spring Emerald
+        ],
+      );
 
-    canvas.drawArc(rect, startAngle, sweepAngle * progress, false, progressPaint);
+      final progressPaint = Paint()
+        ..shader = gradient.createShader(rect)
+        ..strokeWidth = 18
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(rect, startAngle, sweepAngle * progress, false, progressPaint);
+    }
   }
 
   @override

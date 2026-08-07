@@ -288,8 +288,54 @@ class _BodyBuildingDashboardScreenState extends State<BodyBuildingDashboardScree
                   ),
                 ],
               ),
-              
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
+
+              // 3D Trainer Studio Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("3D Trainer Studio", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: FitzaTheme.primaryDark.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.view_in_ar_rounded, size: 14, color: FitzaTheme.primaryDark),
+                        const SizedBox(width: 4),
+                        Text("3D MODELS", style: theme.textTheme.labelSmall?.copyWith(color: FitzaTheme.primaryDark, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ],
+              ).animate().fade(delay: 220.ms),
+
+              const SizedBox(height: 16),
+
+              SoftCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Interactive Form Analyzer", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text("Rotate, play, and inspect real-time 3D biomechanics for perfect execution.", style: theme.textTheme.bodySmall?.copyWith(color: isDark ? Colors.white54 : Colors.black54)),
+                    const SizedBox(height: 16),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: const ExerciseAnimationWidget(
+                        animationType: ExerciseAnimationType.pushup,
+                        height: 220,
+                        autoPlay: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fade(delay: 250.ms).slideY(begin: 0.05),
+
+              const SizedBox(height: 32),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

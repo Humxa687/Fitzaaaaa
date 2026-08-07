@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
-import 'phone_verification_modal.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,9 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _handlePhoneSignIn() {
-    PhoneVerificationModal.show(context);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,38 +210,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                           ),
 
-                          const SizedBox(height: 16),
-
-                          // Phone Sign-In Button
-                          ElevatedButton(
-                            onPressed: _isLoggingIn ? null : _handlePhoneSignIn,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF2C2C2C) : Colors.white,
-                              foregroundColor: theme.brightness == Brightness.dark ? Colors.white : Colors.black87,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(
-                                  color: theme.brightness == Brightness.dark ? Colors.white12 : Colors.grey.shade200,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.phone_android_rounded, size: 22, color: Colors.blue.shade500),
-                                const SizedBox(width: 14),
-                                const Text(
-                                  "Continue with Phone",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                     ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),

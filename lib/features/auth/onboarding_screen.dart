@@ -15,6 +15,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _nameController = TextEditingController();
   int _currentStep = 0;
 
   // Onboarding Selection State
@@ -61,6 +62,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {"title": "Athlete", "desc": "Intense physical training daily"},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with provider name if available, otherwise blank
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<FitnessProvider>(context, listen: false);
+      if (provider.userName.isNotEmpty && provider.userName != "User") {
+        _nameController.text = provider.userName;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
   Future<void> _requestPermissions() async {
     await [
       Permission.activityRecognition,
@@ -95,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     double finalWeight = _isWeightKg ? _weightKg.toDouble() : (_weightLbs / 2.20462);
 
     await provider.updateProfile(
-      name: provider.userName,
+      name: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "Fitza User",
       age: _selectedAge,
       height: double.parse(finalHeight.toStringAsFixed(1)),
       weight: double.parse(finalWeight.toStringAsFixed(1)),
@@ -223,8 +243,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           const Text("Welcome, Let's Setup Your Profile 👋", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text("Pre-filled from ${provider.userEmail}", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          Text("Personalize your fitness journey.", style: const TextStyle(color: Colors.grey, fontSize: 13)),
 
+          const SizedBox(height: 32),
+
+          const Text("Your Name", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              hintText: "Enter your name",
+              prefixIcon: Icon(Icons.person, color: Colors.blue.shade600),
+              filled: true,
+              fillColor: theme.colorScheme.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
 
           const Text("Select Gender", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -698,10 +743,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             );
           }),
+        ],
       ).animate().fadeIn(duration: 300.ms),
     );
   }
-  
+
   // --- Step 5: Step Goal ---
   Widget _buildStepGoalStep(ThemeData theme) {
     return SingleChildScrollView(

@@ -311,7 +311,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   ),
                   
                   _buildSideButton(Icons.refresh, () {
-                     provider.resetActivity();
+                     provider.resetLiveActivity();
                   }, theme, isSecondary: true),
                 ],
               ),

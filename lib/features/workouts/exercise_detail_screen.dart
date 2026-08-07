@@ -126,11 +126,11 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
             // Quick Stats Row Cards
             Row(
               children: [
-                Expanded(child: _buildStatChip(theme, Icons.bar_chart_rounded, "Level", exercise.difficulty, FitzaTheme.energyOrange)),
+                Expanded(child: _buildStatChip(theme, Icons.bar_chart_rounded, "Level", exercise.difficulty, FitzaTheme.primaryDark)),
                 const SizedBox(width: 8),
                 Expanded(child: _buildStatChip(theme, Icons.build_circle_rounded, "Gear", exercise.equipment, FitzaTheme.primaryDark)),
                 const SizedBox(width: 8),
-                Expanded(child: _buildStatChip(theme, Icons.local_fire_department_rounded, "Burn", "~${exercise.caloriesBurned}", FitzaTheme.accentNeon)),
+                Expanded(child: _buildStatChip(theme, Icons.local_fire_department_rounded, "Burn", "~${exercise.caloriesBurned}", FitzaTheme.primaryLight)),
               ],
             ),
 

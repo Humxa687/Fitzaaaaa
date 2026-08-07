@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'workout_models.dart';
 import '../../core/theme.dart';
+enum ExerciseState { idle, active, resting }
 
 class ExerciseAnimationWidget extends StatefulWidget {
   final ExerciseAnimationType animationType;
   final double height;
   final String exerciseName;
   final bool autoPlay;
+  final ExerciseState state;
 
   const ExerciseAnimationWidget({
     super.key,
@@ -15,6 +17,7 @@ class ExerciseAnimationWidget extends StatefulWidget {
     this.height = 220,
     this.exerciseName = "",
     this.autoPlay = false,
+    this.state = ExerciseState.active,
   });
 
   @override
@@ -38,18 +41,14 @@ class _ExerciseAnimationWidgetState extends State<ExerciseAnimationWidget> {
 
   String _getModelPath() {
     switch (widget.animationType) {
-      case ExerciseAnimationType.squat:
-      case ExerciseAnimationType.lunge:
-        return 'assets/models/Air Squat.glb';
       case ExerciseAnimationType.pushup:
       case ExerciseAnimationType.benchPress:
+        if (widget.state == ExerciseState.idle) return 'assets/models/Idle To Push Up.glb';
+        if (widget.state == ExerciseState.resting) return 'assets/models/Push Up To Idle.glb';
         return 'assets/models/Push Up.glb';
-      case ExerciseAnimationType.plank:
-      case ExerciseAnimationType.crunch:
-        return 'assets/models/Plank.glb';
       default:
-        // Fallback for missing models - using Squat as placeholder
-        return 'assets/models/Air Squat.glb';
+        // Safe fallback to valid 3D asset
+        return 'assets/models/Push Up.glb';
     }
   }
 
@@ -64,12 +63,12 @@ class _ExerciseAnimationWidgetState extends State<ExerciseAnimationWidget> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: FitzaTheme.energyOrange.withValues(alpha: 0.3),
+          color: FitzaTheme.primaryDark.withValues(alpha: 0.2),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: FitzaTheme.energyOrange.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             spreadRadius: 2,
           )
@@ -90,58 +89,69 @@ class _ExerciseAnimationWidgetState extends State<ExerciseAnimationWidget> {
             Flutter3DViewer(
               controller: controller,
               src: _getModelPath(),
-              progressBarColor: FitzaTheme.energyOrange,
+              progressBarColor: FitzaTheme.primaryDark,
             ),
 
-          // Live Animation Badge
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: FitzaTheme.energyOrange, width: 1),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: FitzaTheme.energyOrange,
-                      shape: BoxShape.circle,
+            // Live Animation Badge
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: FitzaTheme.primaryDark, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: FitzaTheme.primaryDark,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    "3D TRAINER",
-                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    const Text(
+                      "3D TRAINER",
+                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          
-          Positioned(
-            bottom: 12,
-            left: 12,
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () => controller.playAnimation(),
-                  icon: const Icon(Icons.play_circle_fill, color: FitzaTheme.energyOrange, size: 32),
+            
+            Positioned(
+              bottom: 12,
+              left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                IconButton(
-                  onPressed: () => controller.pauseAnimation(),
-                  icon: const Icon(Icons.pause_circle_filled, color: Colors.white70, size: 32),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => controller.playAnimation(),
+                      icon: const Icon(Icons.play_circle_fill, color: Colors.white, size: 28),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                    IconButton(
+                      onPressed: () => controller.pauseAnimation(),
+                      icon: const Icon(Icons.pause_circle_filled, color: Colors.white70, size: 28),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             )
-          )
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

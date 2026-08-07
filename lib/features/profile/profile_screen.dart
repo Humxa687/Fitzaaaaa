@@ -6,10 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
-import '../auth/login_screen.dart';
-import '../auth/phone_verification_modal.dart';
 import 'settings_screen.dart';
-
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -93,6 +90,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text("My Profile", style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            },
+          ),
           IconButton(
             icon: Icon(_isEditing ? Icons.check : Icons.edit),
             onPressed: () {
@@ -183,48 +186,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Phone OTP Verification Status Card
-                    InkWell(
-                      onTap: () => PhoneVerificationModal.show(context),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: provider.isPhoneVerified
-                              ? Colors.green.withValues(alpha: 0.15)
-                              : theme.colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: provider.isPhoneVerified
-                                ? Colors.green.shade600
-                                : theme.colorScheme.primary.withValues(alpha: 0.4),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              provider.isPhoneVerified ? Icons.verified_user_rounded : Icons.phone_android_rounded,
-                              color: provider.isPhoneVerified ? Colors.green.shade700 : theme.colorScheme.primary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              provider.isPhoneVerified
-                                  ? "Verified: ${provider.verifiedPhoneNumber ?? ''}"
-                                  : "Verify Mobile Phone via OTP",
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: provider.isPhoneVerified ? Colors.green.shade800 : theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -290,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Smart Calculations
               Card(
-                color: FitzaTheme.energyOrange.withOpacity(0.1),
+                color: FitzaTheme.energyOrange.withValues(alpha: 0.1),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -8,6 +9,7 @@ import '../../core/fitness_provider.dart';
 import '../../core/theme.dart';
 import 'workout_models.dart';
 import 'exercise_animation_widget.dart';
+import 'workout_replay_dialog.dart';
 
 class WorkoutPlayerScreen extends StatefulWidget {
   final List<ExerciseModel> exercises;
@@ -65,9 +67,33 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   void _startRestTimer() {
     _exerciseTimer?.cancel();
     final currentEx = widget.exercises[_currentExerciseIndex];
+    int restTime = currentEx.restSeconds;
+
+    bool isWorkoutFinished = false;
+
+    if (_currentSetIndex < currentEx.sets) {
+      setState(() {
+        _currentSetIndex++;
+      });
+    } else {
+      if (_currentExerciseIndex < widget.exercises.length - 1) {
+        setState(() {
+          _currentExerciseIndex++;
+          _currentSetIndex = 1;
+        });
+      } else {
+        isWorkoutFinished = true;
+      }
+    }
+
+    if (isWorkoutFinished) {
+      _finishWorkout();
+      return;
+    }
+
     setState(() {
       _isResting = true;
-      _restSecondsRemaining = currentEx.restSeconds;
+      _restSecondsRemaining = restTime;
     });
 
     _restTimer?.cancel();
@@ -89,24 +115,40 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     HapticFeedback.heavyImpact();
     setState(() {
       _isResting = false;
+      _exerciseSeconds = 0;
     });
+    _startExerciseTimer();
+  }
 
+  void _advanceWithoutRest() {
+    _exerciseTimer?.cancel();
+
+    bool isWorkoutFinished = false;
     final currentEx = widget.exercises[_currentExerciseIndex];
+    
     if (_currentSetIndex < currentEx.sets) {
       setState(() {
         _currentSetIndex++;
       });
     } else {
-      // Move to next exercise
       if (_currentExerciseIndex < widget.exercises.length - 1) {
         setState(() {
           _currentExerciseIndex++;
           _currentSetIndex = 1;
         });
       } else {
-        _finishWorkout();
+        isWorkoutFinished = true;
       }
     }
+
+    if (isWorkoutFinished) {
+      _finishWorkout();
+      return;
+    }
+
+    setState(() {
+      _exerciseSeconds = 0;
+    });
     _startExerciseTimer();
   }
 
@@ -122,60 +164,28 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     _confettiController.play();
 
     final provider = Provider.of<FitnessProvider>(context, listen: false);
-    provider.addSteps(250); // Reward steps/XP
+    provider.logWorkoutCompleted(
+      name: widget.workoutTitle,
+      calories: 280,
+      xp: 250,
+      muscles: ['Chest', 'Arms', 'Shoulders'],
+      durationMinutes: max(1, _exerciseSeconds ~/ 60),
+    );
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
-          children: [
-            Icon(Icons.emoji_events_rounded, color: Colors.amber, size: 28),
-            SizedBox(width: 10),
-            Text("WORKOUT COMPLETE!"),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "🏆 Incredible effort! You completed all exercises and crushed your session!",
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bolt_rounded, color: Colors.green),
-                  SizedBox(width: 6),
-                  Text("+250 XP & Workout Streak Saved", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: FitzaTheme.energyOrange,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            onPressed: () {
-              Navigator.pop(context); // close dialog
-              Navigator.pop(context); // return to dashboard
-            },
-            child: const Text("Awesome!", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
+      builder: (_) => WorkoutReplayDialog(
+        workoutName: widget.workoutTitle,
+        calories: 280,
+        xp: 250,
+        muscles: const ['Chest', 'Arms', 'Shoulders'],
       ),
-    );
+    ).then((_) {
+      if (mounted) {
+        Navigator.pop(context); // Return to dashboard
+      }
+    });
   }
 
   @override
@@ -244,7 +254,13 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                         const SizedBox(height: 24),
 
                         // Large 2D Motion Character Animation Canvas
-                        ExerciseAnimationWidget(animationType: currentEx.animationType, height: 250),
+                        ExerciseAnimationWidget(
+                          animationType: currentEx.animationType, 
+                          height: 250,
+                          state: _isResting 
+                              ? ExerciseState.resting 
+                              : (_isPaused ? ExerciseState.idle : ExerciseState.active),
+                        ),
 
                         const SizedBox(height: 20),
 
@@ -426,7 +442,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.skip_next_rounded, size: 48),
-                            onPressed: () => _skipRest(),
+                            onPressed: () => _advanceWithoutRest(),
                           ),
                         ],
                       ),
